@@ -5,40 +5,390 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// ------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PropertyStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum BookingStatus {
+  WAITING_PAYMENT
+  WAITING_CONFIRMATION
+  CONFIRMED
+  CANCELED
+  EXPIRED
+  CHECKED_IN
+  CHECKED_OUT
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+// ------------------------------------------------------
+// CORE ACCOUNTS
+// ------------------------------------------------------
 model User {
-  id       String @id @default(cuid())
-  email    String @unique
-  name     String
-  password String
-
-  user_addresses UserAddress[]
+  id          String  @id @default(uuid()) @db.Uuid
+  role        Role    @default(USER)
+  fullName    String  @db.VarChar(80)
+  email       String  @unique @db.VarChar(120)
+  phoneNumber String? @db.VarChar(20)
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime?
   deletedAt DateTime?
 
-  @@map("users")
+  // relations
+  adminProfile      AdminProfile?
+  propertiesAsAdmin Property[]    @relation("AdminProperties")
+  bookings          Booking[]
+  payments          Payment[]
+  properties        Property[]    @relation("UserProperties")
+
+  @@index([role])
 }
 
-model UserAddress {
-  id        Int    @id @default(autoincrement())
-  consignee String
-  address   String
+model AdminProfile {
+  id          String  @id @default(uuid()) @db.Uuid
+  userId      String  @unique @db.Uuid
+  displayName String  @db.VarChar(100)
+  description String?
 
-  userId String @unique
-  users  User   @relation(fields: [userId], references: [id])
+  bankName        String? @db.VarChar(80)
+  bankAccountNo   String? @db.VarChar(60)
+  bankAccountName String? @db.VarChar(80)
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime?
   deletedAt DateTime?
 
-  @@map("user_addresses")
+  // relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// ------------------------------------------------------
+// TAXONOMY & LOCATION
+// ------------------------------------------------------
+model PropertyType {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @unique @db.VarChar(60)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  properties Property[]
+}
+
+model Location {
+  id      String  @id @default(uuid()) @db.Uuid
+  country String  @db.VarChar(80)
+  city    String  @db.VarChar(80)
+  address String? @db.VarChar(255)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  properties Property[]
+
+  @@index([country, city])
+}
+
+// ------------------------------------------------------
+// FACILITIES (NEW)
+// ------------------------------------------------------
+model Facility {
+  id   String  @id @default(uuid()) @db.Uuid
+  name String  @unique @db.VarChar(100)
+  icon String? @db.VarChar(120)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  // relations
+  propertyFacilities PropertyFacility[]
+  roomFacilities     RoomFacility[]
+}
+
+// join table: Property - Facility (many-to-many)
+model PropertyFacility {
+  id         String @id @default(uuid()) @db.Uuid
+  propertyId String @db.Uuid
+  facilityId String @db.Uuid
+
+  property Property @relation(fields: [propertyId], references: [id])
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([propertyId, facilityId])
+  @@index([facilityId])
+}
+
+// join table: Room - Facility (many-to-many)
+model RoomFacility {
+  id         String @id @default(uuid()) @db.Uuid
+  roomId     String @db.Uuid
+  facilityId String @db.Uuid
+
+  room     Room     @relation(fields: [roomId], references: [id])
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, facilityId])
+  @@index([facilityId])
+}
+
+// ------------------------------------------------------
+// PROPERTY & ROOMS
+// ------------------------------------------------------
+model Property {
+  id          String  @id @default(uuid()) @db.Uuid
+  adminUserId String  @db.Uuid
+  title       String  @db.VarChar(150)
+  description String?
+  typeId      String? @db.Uuid
+  locationId  String  @db.Uuid
+
+  maxGuests Int @default(1)
+  bedrooms  Int @default(0)
+  beds      Int @default(0)
+  bathrooms Int @default(0)
+  minNights Int @default(1)
+  maxNights Int @default(30)
+
+  basePricePerNightIdr Int            @default(0)
+  status               PropertyStatus @default(DRAFT)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  // relations
+  adminUser     User                   @relation("AdminProperties", fields: [adminUserId], references: [id])
+  type          PropertyType?          @relation(fields: [typeId], references: [id])
+  location      Location               @relation(fields: [locationId], references: [id])
+  images        PropertyImage[]
+  specialPrices PropertySpecialPrice[]
+  calendars     PropertyCalendar[]
+  bookings      Booking[]
+  rooms         Room[] // NEW
+  facilities    PropertyFacility[] // NEW (via join)
+  user          User?                  @relation("UserProperties", fields: [userId], references: [id])
+  userId        String?                @db.Uuid
+
+  @@index([adminUserId])
+  @@index([locationId])
+  @@index([status])
+  @@index([basePricePerNightIdr])
+}
+
+model PropertyImage {
+  id         String @id @default(uuid()) @db.Uuid
+  propertyId String @db.Uuid
+  url        String @db.VarChar(255)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+}
+
+// Room per property (NEW)
+model Room {
+  id                   String  @id @default(uuid()) @db.Uuid
+  propertyId           String  @db.Uuid
+  name                 String  @db.VarChar(120)
+  description          String?
+  maxGuests            Int     @default(1)
+  beds                 Int     @default(1)
+  bathrooms            Int     @default(1)
+  basePricePerNightIdr Int     @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  // relations
+  property   Property       @relation(fields: [propertyId], references: [id])
+  facilities RoomFacility[] // many-to-many ke Facility
+  bookings   Booking[] // booking per room (optional di Booking)
+
+  @@index([propertyId])
+}
+
+// ------------------------------------------------------
+// PRICING & AVAILABILITY
+// ------------------------------------------------------
+model PropertySpecialPrice {
+  id               String   @id @default(uuid()) @db.Uuid
+  propertyId       String   @db.Uuid
+  startDate        DateTime
+  endDate          DateTime
+  pricePerNightIdr Int      @default(0)
+  note             String?  @db.VarChar(120)
+  isActive         Boolean  @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([startDate, endDate])
+  @@index([isActive])
+}
+
+model PropertyCalendar {
+  id                       String   @id @default(uuid()) @db.Uuid
+  propertyId               String   @db.Uuid
+  date                     DateTime
+  isAvailable              Boolean  @default(true)
+  overridePricePerNightIdr Int      @default(0)
+  minStayNightsOverride    Int?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([propertyId, date])
+  @@index([isAvailable])
+}
+
+// ------------------------------------------------------
+// BOOKINGS
+// ------------------------------------------------------
+model Booking {
+  id         String  @id @default(uuid()) @db.Uuid
+  userId     String  @db.Uuid
+  propertyId String  @db.Uuid
+  roomId     String? @db.Uuid // NEW: booking bisa spesifik ke room tertentu
+
+  checkInDate  DateTime
+  checkOutDate DateTime
+  nights       Int      @default(1)
+  guestsCount  Int      @default(1)
+
+  status BookingStatus @default(WAITING_PAYMENT)
+
+  nightlySubtotalIdr Int @default(0)
+  cleaningFeeIdr     Int @default(0)
+  serviceFeeIdr      Int @default(0)
+  discountIdr        Int @default(0)
+  totalPriceIdr      Int @default(0)
+
+  createdAt    DateTime  @default(now())
+  paymentDueAt DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?   @db.VarChar(200)
+
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  user     User     @relation(fields: [userId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+  room     Room?    @relation(fields: [roomId], references: [id])
+
+  nightlyRates BookingNightlyRate[]
+  payments     Payment[]
+  emails       EmailNotification[]
+
+  @@index([userId])
+  @@index([propertyId])
+  @@index([roomId])
+  @@index([status])
+  @@index([checkInDate])
+  @@index([createdAt])
+  @@index([paymentDueAt])
+}
+
+model BookingNightlyRate {
+  id               String   @id @default(uuid()) @db.Uuid
+  bookingId        String   @db.Uuid
+  date             DateTime
+  pricePerNightIdr Int      @default(0)
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([date])
+}
+
+// ------------------------------------------------------
+// PAYMENTS
+// ------------------------------------------------------
+model Payment {
+  id            String        @id @default(uuid()) @db.Uuid
+  bookingId     String        @db.Uuid
+  userId        String        @db.Uuid
+  amountIdr     Int           @default(0)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod String?       @db.VarChar(40)
+  providerTxId  String?       @db.VarChar(80)
+  proofFileUrl  String?       @db.VarChar(255)
+
+  requestedAt DateTime  @default(now())
+  paidAt      DateTime?
+  failedAt    DateTime?
+  refundedAt  DateTime?
+
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([requestedAt])
+}
+
+// ------------------------------------------------------
+// NOTIFICATIONS
+// ------------------------------------------------------
+model EmailNotification {
+  id             String   @id @default(uuid()) @db.Uuid
+  bookingId      String   @db.Uuid
+  type           String   @db.VarChar(40)
+  recipientEmail String   @db.VarChar(120)
+  sentAt         DateTime @default(now())
+  payloadJson    String?
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([type])
+  @@index([sentAt])
 }
