@@ -53,6 +53,7 @@ model User {
   role        Role    @default(USER)
   fullName    String  @db.VarChar(80)
   email       String  @unique @db.VarChar(120)
+  password    String  @db.VarChar(255)
   phoneNumber String? @db.VarChar(20)
 
   createdAt DateTime  @default(now())

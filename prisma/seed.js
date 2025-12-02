@@ -13,6 +13,7 @@ async function main() {
       role: "ADMIN",
       fullName: "Admin Tenant",
       email: "admin@example.com",
+      password: "abc12345",
       phoneNumber: "081234567890",
       adminProfile: {
         create: {
@@ -33,6 +34,7 @@ async function main() {
       role: "USER",
       fullName: "User Penyewa",
       email: "user@example.com",
+      password: "abc12345",
       phoneNumber: "089876543210",
     },
   });
