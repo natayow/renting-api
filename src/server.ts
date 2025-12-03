@@ -1,5 +1,6 @@
 import express, { Express, NextFunction, Request, Response } from 'express';
 import authrouter from './routers/auth.router';
+import propertyTypeRouter from './routers/propertyType.router';
 import { customCors } from './middlewares/cors.middleware';
 
 const app: Express = express();
@@ -10,6 +11,7 @@ app.use(express.json());
 const port = 8000;
 
 app.use('/api/auth', authrouter);
+app.use('/api/property-types', propertyTypeRouter);
 
 app.get('/', (_: Request, res: Response) => {
     res.send('<h1>Hello World!</h1>');
