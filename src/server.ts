@@ -1,6 +1,7 @@
 import express, { Express, NextFunction, Request, Response } from 'express';
 import authrouter from './routers/auth.router';
 import propertyTypeRouter from './routers/propertyType.router';
+import locationRouter from './routers/location.router';
 import { customCors } from './middlewares/cors.middleware';
 
 const app: Express = express();
@@ -12,6 +13,7 @@ const port = 8000;
 
 app.use('/api/auth', authrouter);
 app.use('/api/property-types', propertyTypeRouter);
+app.use('/api/locations', locationRouter);
 
 app.get('/', (_: Request, res: Response) => {
     res.send('<h1>Hello World!</h1>');
