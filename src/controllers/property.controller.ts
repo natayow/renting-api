@@ -17,7 +17,9 @@ export async function createPropertyController(req: Request, res: Response) {
             title,
             description,
             typeId,
-            locationId,
+            city,
+            country,
+            address,
             maxGuests,
             bedrooms,
             beds,
@@ -37,15 +39,15 @@ export async function createPropertyController(req: Request, res: Response) {
     files = fileGroups['propertyImages'] || [];
   }
 
-        // You can get adminUserId from JWT payload instead of request body for security
-        // const adminUserId = res.locals.payload?.id;
 
         const result = await createPropertyService({
             adminUserId,
             title,
             description,
             typeId,
-            locationId,
+            city,
+            country,
+            address,
             maxGuests,
             bedrooms,
             beds,
@@ -167,9 +169,7 @@ export async function updatePropertyController(req: Request, res: Response) {
             status,
         } = req.body;
 
-        // Optional: Get adminUserId from JWT payload for ownership verification
-        // const adminUserId = res.locals.payload?.id;
-
+       
         const result = await updatePropertyService(
             id,
             {
@@ -186,7 +186,6 @@ export async function updatePropertyController(req: Request, res: Response) {
                 basePricePerNightIdr,
                 status,
             },
-            // adminUserId // Uncomment to enable ownership verification
         );
 
         res.status(200).json({
@@ -221,12 +220,8 @@ export async function deletePropertyController(req: Request, res: Response) {
     try {
         const { id } = req.params;
 
-        // Optional: Get adminUserId from JWT payload for ownership verification
-        // const adminUserId = res.locals.payload?.id;
-
         await deletePropertyService(
             id,
-            // adminUserId // Uncomment to enable ownership verification
         );
 
         res.status(200).json({
@@ -253,16 +248,6 @@ export async function deletePropertyController(req: Request, res: Response) {
 export async function getPropertiesByAdminController(req: Request, res: Response) {
     try {
         const { adminUserId } = req.params;
-
-        // Optional: Verify that the requesting user is the same admin
-        // const requestingUserId = res.locals.payload?.id;
-        // if (requestingUserId !== adminUserId) {
-        //     return res.status(403).json({
-        //         success: false,
-        //         message: 'You do not have permission to view these properties',
-        //         data: null,
-        //     });
-        // }
 
         const properties = await getPropertiesByAdminService(adminUserId);
 
@@ -293,7 +278,6 @@ export async function updatePropertyStatusController(req: Request, res: Response
             });
         }
 
-        // Validate status enum
         const validStatuses: PropertyStatus[] = ['DRAFT', 'ACTIVE', 'INACTIVE'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
@@ -303,13 +287,10 @@ export async function updatePropertyStatusController(req: Request, res: Response
             });
         }
 
-        // Optional: Get adminUserId from JWT payload for ownership verification
-        // const adminUserId = res.locals.payload?.id;
 
         const result = await updatePropertyStatusService(
             id,
             status,
-            // adminUserId // Uncomment to enable ownership verification
         );
 
         res.status(200).json({

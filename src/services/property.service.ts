@@ -1,20 +1,22 @@
 import prisma from '../config/prisma-client';
 import { Property, PropertyStatus } from '../generated/prisma';
 
-interface CreatePropertyInput extends Pick<Property,
-    | 'adminUserId'
-    | 'title'
-    | 'description'
-    | 'typeId'
-    | 'locationId'
-    | 'maxGuests'
-    | 'bedrooms'
-    | 'beds'
-    | 'bathrooms'
-    | 'minNights'
-    | 'maxNights'
-    | 'basePricePerNightIdr'
-    | 'status'> {
+interface CreatePropertyInput {
+    adminUserId: string;
+    title: string;
+    description?: string | null;
+    typeId?: string | null;
+    city: string;
+    country: string;
+    address: string;
+    maxGuests: number;
+    bedrooms: number;
+    beds: number;
+    bathrooms: number;
+    minNights: number;
+    maxNights: number;
+    basePricePerNightIdr: number;
+    status: PropertyStatus;
     files: Express.Multer.File[];
 }
 
@@ -44,62 +46,41 @@ interface GetPropertiesFilters {
     minGuests?: number;
 }
 
-export async function createPropertyService({ adminUserId, title, description, typeId, locationId, maxGuests, bedrooms, beds, bathrooms, minNights, maxNights, basePricePerNightIdr, status, files }: CreatePropertyInput) {
-    // Validate required fields
-    if (!adminUserId) {
-        throw new Error('Admin user ID is required');
-    }
-
-    if (!title || title.trim() === '') {
-        throw new Error('Title is required');
-    }
-
-    if (!locationId) {
-        throw new Error('Location ID is required');
-    }
-
-    // Verify admin user exists and has ADMIN role
-    const adminUser = await prisma.user.findUnique({
-        where: { id: adminUserId },
-    });
-
-    if (!adminUser) {
-        throw new Error('Admin user not found');
-    }
-
-    if (adminUser.role !== 'ADMIN') {
-        throw new Error('User must have ADMIN role to create properties');
-    }
-
-    // Verify location exists
-    const location = await prisma.location.findUnique({
-        where: { id: locationId },
-    });
-
-    if (!location) {
-        throw new Error('Location not found');
-    }
-
-    // Verify property type exists if provided
-    if (typeId) {
-        const propertyType = await prisma.propertyType.findUnique({
-            where: { id: typeId },
-        });
-
-        if (!propertyType) {
-            throw new Error('Property type not found');
-        }
-    }
-
+export async function createPropertyService({ 
+    adminUserId, 
+    title, 
+    description, 
+    typeId, 
+    city, 
+    country, 
+    address, 
+    maxGuests, 
+    bedrooms, 
+    beds, 
+    bathrooms, 
+    minNights, 
+    maxNights, 
+    basePricePerNightIdr, 
+    status, 
+    files 
+}: CreatePropertyInput) {
     try {
         return await prisma.$transaction(async (tx) => {
+            const newLocation = await tx.location.create({
+                data: {
+                    city,
+                    country,
+                    address,
+                },
+            });
+
             const newProperty = await tx.property.create({
                 data: {
                     adminUser: {
                         connect: { id: adminUserId }
                     },
                     location: {
-                        connect: { id: locationId }
+                        connect: { id: newLocation.id }
                     },
                     ...(typeId && {
                         type: {
@@ -129,7 +110,6 @@ export async function createPropertyService({ adminUserId, title, description, t
                 });
             }
 
-            // Fetch the complete property with relations
             const completeProperty = await tx.property.findUnique({
                 where: { id: newProperty.id },
                 include: {
@@ -152,7 +132,6 @@ export async function createPropertyService({ adminUserId, title, description, t
     } catch (error: any) {
         console.error('Error creating property:', error);
         
-        // Handle specific Prisma errors
         if (error.code === 'P2003') {
             throw new Error('Invalid reference: Admin user, location, or property type not found');
         }
@@ -279,7 +258,6 @@ export async function getPropertyByIdService(id: string) {
 }
 
 export async function updatePropertyService(id: string, data: UpdatePropertyInput, adminUserId?: string) {
-    // Check if property exists
     const existingProperty = await prisma.property.findFirst({
         where: {
             id,
@@ -291,37 +269,8 @@ export async function updatePropertyService(id: string, data: UpdatePropertyInpu
         throw new Error('Property not found');
     }
 
-    // If adminUserId is provided, verify ownership
     if (adminUserId && existingProperty.adminUserId !== adminUserId) {
         throw new Error('You do not have permission to update this property');
-    }
-
-    // Verify location exists if provided
-    if (data.locationId) {
-        const location = await prisma.location.findFirst({
-            where: {
-                id: data.locationId,
-                deletedAt: null,
-            },
-        });
-
-        if (!location) {
-            throw new Error('Location not found');
-        }
-    }
-
-    // Verify property type exists if provided
-    if (data.typeId) {
-        const propertyType = await prisma.propertyType.findFirst({
-            where: {
-                id: data.typeId,
-                deletedAt: null,
-            },
-        });
-
-        if (!propertyType) {
-            throw new Error('Property type not found');
-        }
     }
 
     try {
@@ -386,7 +335,6 @@ export async function deletePropertyService(id: string, adminUserId?: string) {
         throw new Error('Property not found');
     }
 
-    // If adminUserId is provided, verify ownership
     if (adminUserId && existingProperty.adminUserId !== adminUserId) {
         throw new Error('You do not have permission to delete this property');
     }
@@ -447,7 +395,6 @@ export async function updatePropertyStatusService(id: string, status: PropertySt
         throw new Error('Property not found');
     }
 
-    // If adminUserId is provided, verify ownership
     if (adminUserId && existingProperty.adminUserId !== adminUserId) {
         throw new Error('You do not have permission to update this property');
     }

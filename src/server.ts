@@ -1,4 +1,5 @@
 import express, { Express, NextFunction, Request, Response } from 'express';
+import path from 'path';
 import authrouter from './routers/auth.router';
 import propertyTypeRouter from './routers/propertyType.router';
 import locationRouter from './routers/location.router';
@@ -10,6 +11,10 @@ const app: Express = express();
 app.use(customCors);
 
 app.use(express.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 const port = 8000;
 
 app.use('/api/auth', authrouter);

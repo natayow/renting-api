@@ -6,17 +6,9 @@ export async function createLocationService({
     city, 
     address 
 }: Pick<Location, 'country' | 'city' | 'address'>) {
-    if (!country || !country.trim()) {
-        throw new Error('Country is required');
-    }
-    
-    if (!city || !city.trim()) {
-        throw new Error('City is required');
-    }
-
     const normalizedCountry = country.trim();
     const normalizedCity = city.trim();
-    const normalizedAddress = address?.trim() || null;
+    const normalizedAddress = address.trim();
 
     try {
         const newLocation = await prisma.location.create({
@@ -58,10 +50,6 @@ export async function getLocationByIdService(id: string) {
 }
 
 export async function getLocationsByCountryService(country: string) {
-    if (!country || !country.trim()) {
-        throw new Error('Country is required');
-    }
-
     const locations = await prisma.location.findMany({
         where: {
             country: {
@@ -79,10 +67,6 @@ export async function getLocationsByCountryService(country: string) {
 }
 
 export async function getLocationsByCityService(city: string) {
-    if (!city || !city.trim()) {
-        throw new Error('City is required');
-    }
-
     const locations = await prisma.location.findMany({
         where: {
             city: {
@@ -103,17 +87,9 @@ export async function updateLocationService(
     id: string, 
     { country, city, address }: Pick<Location, 'country' | 'city' | 'address'>
 ) {
-    if (!country || !country.trim()) {
-        throw new Error('Country is required');
-    }
-    
-    if (!city || !city.trim()) {
-        throw new Error('City is required');
-    }
-
     const normalizedCountry = country.trim();
     const normalizedCity = city.trim();
-    const normalizedAddress = address?.trim() || null;
+    const normalizedAddress = address.trim();
 
     const existingLocation = await prisma.location.findFirst({
         where: {

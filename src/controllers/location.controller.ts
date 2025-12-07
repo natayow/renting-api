@@ -84,15 +84,7 @@ export async function getLocationsByCountryController(req: Request, res: Respons
     try {
         const { country } = req.query;
 
-        if (!country || typeof country !== 'string') {
-            return res.status(400).json({
-                success: false,
-                message: 'Country query parameter is required',
-                data: null,
-            });
-        }
-
-        const locations = await getLocationsByCountryService(country);
+        const locations = await getLocationsByCountryService(country as string);
 
         res.status(200).json({
             success: true,
@@ -100,12 +92,7 @@ export async function getLocationsByCountryController(req: Request, res: Respons
             data: locations,
         });
     } catch (error: any) {
-        let statusCode = 500;
-        if (error.message.includes('required')) {
-            statusCode = 400;
-        }
-
-        res.status(statusCode).json({
+        res.status(500).json({
             success: false,
             message: error?.message || 'Failed to retrieve locations',
             data: null,
@@ -117,15 +104,7 @@ export async function getLocationsByCityController(req: Request, res: Response) 
     try {
         const { city } = req.query;
 
-        if (!city || typeof city !== 'string') {
-            return res.status(400).json({
-                success: false,
-                message: 'City query parameter is required',
-                data: null,
-            });
-        }
-
-        const locations = await getLocationsByCityService(city);
+        const locations = await getLocationsByCityService(city as string);
 
         res.status(200).json({
             success: true,
@@ -133,12 +112,7 @@ export async function getLocationsByCityController(req: Request, res: Response) 
             data: locations,
         });
     } catch (error: any) {
-        let statusCode = 500;
-        if (error.message.includes('required')) {
-            statusCode = 400;
-        }
-
-        res.status(statusCode).json({
+        res.status(500).json({
             success: false,
             message: error?.message || 'Failed to retrieve locations',
             data: null,
