@@ -18,6 +18,7 @@ interface CreatePropertyInput {
     basePricePerNightIdr: number;
     status: PropertyStatus;
     files: Express.Multer.File[];
+    facilityIds?: string[];
 }
 
 
@@ -62,7 +63,8 @@ export async function createPropertyService({
     maxNights, 
     basePricePerNightIdr, 
     status, 
-    files 
+    files,
+    facilityIds
 }: CreatePropertyInput) {
     try {
         return await prisma.$transaction(async (tx) => {
@@ -110,6 +112,18 @@ export async function createPropertyService({
                 });
             }
 
+            // Create facility relationships
+            if (facilityIds && facilityIds.length > 0) {
+                const facilityData = facilityIds.map((facilityId) => ({
+                    propertyId: newProperty.id,
+                    facilityId: facilityId,
+                }));
+
+                await tx.propertyFacility.createMany({
+                    data: facilityData,
+                });
+            }
+
             const completeProperty = await tx.property.findUnique({
                 where: { id: newProperty.id },
                 include: {
@@ -124,6 +138,11 @@ export async function createPropertyService({
                     type: true,
                     location: true,
                     images: true,
+                    facilities: {
+                        include: {
+                            facility: true,
+                        },
+                    },
                 },
             });
 
