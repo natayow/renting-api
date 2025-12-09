@@ -114,14 +114,21 @@ export async function createPropertyService({
 
             // Create facility relationships
             if (facilityIds && facilityIds.length > 0) {
+                console.log('Creating facility relationships for:', facilityIds);
                 const facilityData = facilityIds.map((facilityId) => ({
                     propertyId: newProperty.id,
                     facilityId: facilityId,
                 }));
 
+                console.log('Facility data to create:', facilityData);
+
                 await tx.propertyFacility.createMany({
                     data: facilityData,
                 });
+                
+                console.log('Facilities created successfully');
+            } else {
+                console.log('No facilityIds provided or array is empty');
             }
 
             const completeProperty = await tx.property.findUnique({
@@ -220,6 +227,11 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
                 include: {
                     facility: true,
                 },
+                where: {
+                    facility: {
+                        deletedAt: null,
+                    },
+                },
             },
         },
         orderBy: {
@@ -254,6 +266,11 @@ export async function getPropertyByIdService(id: string) {
             facilities: {
                 include: {
                     facility: true,
+                },
+                where: {
+                    facility: {
+                        deletedAt: null,
+                    },
                 },
             },
             rooms: {

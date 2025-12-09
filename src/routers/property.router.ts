@@ -41,9 +41,8 @@ router.post(
     jwtVerify(JWT_SECRET_KEY),
     roleVerify(['ADMIN']),
     (req: Request, res: Response, next: NextFunction) => {
-        const upload = uploaderMulter(['jpg', 'jpeg', 'png', 'webp', 'svg']).fields([
-            { name: 'propertyImages', maxCount: 7 }
-        ]);
+        // Using .any() to handle both file and non-file fields
+        const upload = uploaderMulter(['jpg', 'jpeg', 'png', 'webp', 'svg']).any();
         upload(req, res, (err: any) => {
             if (err) {
                 return res.status(400).json({
@@ -52,6 +51,9 @@ router.post(
                     data: null
                 });
             }
+            // Debug: Log request body after multer processing
+            console.log('Request body after multer:', req.body);
+            console.log('Request body keys:', Object.keys(req.body));
             next();
         });
     },

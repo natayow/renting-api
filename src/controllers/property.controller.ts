@@ -32,20 +32,47 @@ export async function createPropertyController(req: Request, res: Response) {
 
         // Parse facilityIds from the request body
         let facilityIds: string[] = [];
-        if (req.body['facilityIds[]']) {
+        
+        console.log('=== FACILITY DEBUG ===');
+        console.log('req.body.facilityIds:', req.body.facilityIds);
+        console.log('Type of req.body.facilityIds:', typeof req.body.facilityIds);
+        console.log('Is Array:', Array.isArray(req.body.facilityIds));
+        
+        // Handle facilityIds - could be array or JSON string
+        if (req.body.facilityIds) {
+            if (Array.isArray(req.body.facilityIds)) {
+                // Already an array
+                facilityIds = req.body.facilityIds;
+                console.log('facilityIds is already an array:', facilityIds);
+            } else if (typeof req.body.facilityIds === 'string') {
+                // Try parsing as JSON string
+                try {
+                    facilityIds = JSON.parse(req.body.facilityIds);
+                    console.log('Parsed facilityIds from JSON string:', facilityIds);
+                } catch (e) {
+                    // If not JSON, treat as single value
+                    facilityIds = [req.body.facilityIds];
+                    console.log('Treated as single value:', facilityIds);
+                }
+            }
+        } else if (req.body['facilityIds[]']) {
+            // Fallback for array notation
             facilityIds = Array.isArray(req.body['facilityIds[]']) 
                 ? req.body['facilityIds[]'] 
                 : [req.body['facilityIds[]']];
+            console.log('Used facilityIds[] notation:', facilityIds);
         }
+
+        console.log('Final facilityIds:', facilityIds);
+        console.log('=== END FACILITY DEBUG ===');
 
         let files: Express.Multer.File[] = [];
 
-    if (req.files && !Array.isArray(req.files)) {
-    const fileGroups = req.files as {
-      [fieldname: string]: Express.Multer.File[];
-    };
-    files = fileGroups['propertyImages'] || [];
-  }
+        // When using .any(), files are in req.files as an array
+        if (req.files && Array.isArray(req.files)) {
+            // Filter files by fieldname 'propertyImages'
+            files = req.files.filter(file => file.fieldname === 'propertyImages');
+        }
 
 
         const result = await createPropertyService({
