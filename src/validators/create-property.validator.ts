@@ -141,8 +141,8 @@ export const createPropertyValidation: ValidationChain[] = [
 
     body('status')
         .optional()
-        .isIn(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
-        .withMessage('Status must be DRAFT, PUBLISHED, or ARCHIVED'),
+        .isIn(['DRAFT', 'ACTIVE', 'INACTIVE'])
+        .withMessage('Status must be DRAFT, ACTIVE, or INACTIVE'),
 ];
 
 // Validation rules for updating a property
@@ -248,14 +248,14 @@ export const updatePropertyValidation: ValidationChain[] = [
 
     body('status')
         .optional()
-        .isIn(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
-        .withMessage('Status must be DRAFT, PUBLISHED, or ARCHIVED'),
+        .isIn(['DRAFT', 'ACTIVE', 'INACTIVE'])
+        .withMessage('Status must be DRAFT, ACTIVE, or INACTIVE'),
 ];
 
 export const updatePropertyStatusValidation: ValidationChain[] = [
     body('status')
         .notEmpty()
         .withMessage('Status is required')
-        .isIn(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
-        .withMessage('Status must be DRAFT, PUBLISHED, or ARCHIVED'),
+        .isIn(['DRAFT', 'ACTIVE', 'INACTIVE'])
+        .withMessage('Status must be DRAFT, ACTIVE, or INACTIVE'),
 ];
