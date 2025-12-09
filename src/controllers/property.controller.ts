@@ -30,6 +30,14 @@ export async function createPropertyController(req: Request, res: Response) {
             status,
         } = req.body;
 
+        // Parse facilityIds from the request body
+        let facilityIds: string[] = [];
+        if (req.body['facilityIds[]']) {
+            facilityIds = Array.isArray(req.body['facilityIds[]']) 
+                ? req.body['facilityIds[]'] 
+                : [req.body['facilityIds[]']];
+        }
+
         let files: Express.Multer.File[] = [];
 
     if (req.files && !Array.isArray(req.files)) {
@@ -57,6 +65,7 @@ export async function createPropertyController(req: Request, res: Response) {
             basePricePerNightIdr,
             status,
             files,
+            facilityIds,
         });
 
         res.status(201).json({
