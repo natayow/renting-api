@@ -6,6 +6,7 @@ import locationRouter from './routers/location.router';
 import propertyRouter from './routers/property.router';
 import { customCors } from './middlewares/cors.middleware';
 import facilityRouter from './routers/facility.router';
+import roomRouter from './routers/room.router';
 
 const app: Express = express();
 
@@ -13,7 +14,6 @@ app.use(customCors);
 
 app.use(express.json());
 
-// Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const port = 8000;
@@ -23,6 +23,7 @@ app.use('/api/property-types', propertyTypeRouter);
 app.use('/api/locations', locationRouter);
 app.use('/api/properties', propertyRouter);
 app.use('/api/facilities', facilityRouter);
+app.use('/api/rooms', roomRouter);
 
 app.get('/', (_: Request, res: Response) => {
     res.send('<h1>Hello World!</h1>');
