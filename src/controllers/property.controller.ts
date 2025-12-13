@@ -131,6 +131,11 @@ export async function getAllPropertiesController(req: Request, res: Response) {
             minPrice,
             maxPrice,
             minGuests,
+            search,
+            page,
+            limit,
+            sortBy,
+            sortOrder,
         } = req.query;
 
         const filters: any = {};
@@ -142,13 +147,19 @@ export async function getAllPropertiesController(req: Request, res: Response) {
         if (minPrice) filters.minPrice = parseInt(minPrice as string);
         if (maxPrice) filters.maxPrice = parseInt(maxPrice as string);
         if (minGuests) filters.minGuests = parseInt(minGuests as string);
+        if (search) filters.search = search as string;
+        if (page) filters.page = parseInt(page as string);
+        if (limit) filters.limit = parseInt(limit as string);
+        if (sortBy) filters.sortBy = sortBy as 'name' | 'price';
+        if (sortOrder) filters.sortOrder = sortOrder as 'asc' | 'desc';
 
-        const properties = await getAllPropertiesService(filters);
+        const result = await getAllPropertiesService(filters);
 
         res.status(200).json({
             success: true,
             message: 'Properties retrieved successfully',
-            data: properties,
+            data: result.data,
+            pagination: result.pagination,
         });
     } catch (error: any) {
         res.status(500).json({

@@ -45,6 +45,11 @@ interface GetPropertiesFilters {
     minPrice?: number;
     maxPrice?: number;
     minGuests?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: 'name' | 'price';
+    sortOrder?: 'asc' | 'desc';
 }
 
 export async function createPropertyService({ 
@@ -206,6 +211,50 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         };
     }
 
+    // Search filter by property name, city, or address
+    if (filters?.search) {
+        where.OR = [
+            {
+                title: {
+                    contains: filters.search,
+                    mode: 'insensitive',
+                },
+            },
+            {
+                location: {
+                    city: {
+                        contains: filters.search,
+                        mode: 'insensitive',
+                    },
+                },
+            },
+            {
+                location: {
+                    address: {
+                        contains: filters.search,
+                        mode: 'insensitive',
+                    },
+                },
+            },
+        ];
+    }
+
+    // Pagination
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 12;
+    const skip = (page - 1) * limit;
+
+    // Sorting
+    let orderBy: any = { createdAt: 'desc' };
+    if (filters?.sortBy === 'name') {
+        orderBy = { title: filters.sortOrder || 'asc' };
+    } else if (filters?.sortBy === 'price') {
+        orderBy = { basePricePerNightIdr: filters.sortOrder || 'asc' };
+    }
+
+    // Get total count for pagination
+    const total = await prisma.property.count({ where });
+
     const properties = await prisma.property.findMany({
         where,
         include: {
@@ -233,13 +282,44 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
                     },
                 },
             },
+            rooms: {
+                where: { deletedAt: null },
+                select: {
+                    id: true,
+                    basePricePerNightIdr: true,
+                },
+            },
         },
-        orderBy: {
-            createdAt: 'desc',
-        },
+        orderBy,
+        skip,
+        take: limit,
     });
 
-    return properties;
+    // Calculate minimum room price for each property
+    const propertiesWithMinPrice = properties.map(property => {
+        let minPrice = property.basePricePerNightIdr;
+        
+        if (property.rooms && property.rooms.length > 0) {
+            const roomPrices = property.rooms.map(room => room.basePricePerNightIdr);
+            const minRoomPrice = Math.min(...roomPrices);
+            minPrice = minRoomPrice > 0 ? minRoomPrice : property.basePricePerNightIdr;
+        }
+
+        return {
+            ...property,
+            minPricePerNight: minPrice,
+        };
+    });
+
+    return {
+        data: propertiesWithMinPrice,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
 }
 
 export async function getPropertyByIdService(id: string) {
