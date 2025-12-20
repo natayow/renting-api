@@ -51,9 +51,6 @@ router.post(
                     data: null
                 });
             }
-            // Debug: Log request body after multer processing
-            console.log('Request body after multer:', req.body);
-            console.log('Request body keys:', Object.keys(req.body));
             next();
         });
     },

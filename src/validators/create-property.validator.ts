@@ -83,61 +83,100 @@ export const createPropertyValidation: ValidationChain[] = [
         .isLength({ min: 5, max: 500 })
         .withMessage('Address must be between 5 and 500 characters'),
 
-    body('maxGuests')
-        .notEmpty()
-        .withMessage('Maximum guests is required')
-        .isInt({ min: 1 })
-        .withMessage('Maximum guests must be at least 1')
-        .toInt(),
-
-    body('bedrooms')
-        .notEmpty()
-        .withMessage('Number of bedrooms is required')
-        .isInt({ min: 0 })
-        .withMessage('Bedrooms must be a non-negative integer')
-        .toInt(),
-
-    body('beds')
-        .notEmpty()
-        .withMessage('Number of beds is required')
-        .isInt({ min: 0 })
-        .withMessage('Beds must be a non-negative integer')
-        .toInt(),
-
-    body('bathrooms')
-        .notEmpty()
-        .withMessage('Number of bathrooms is required')
-        .isInt({ min: 0 })
-        .withMessage('Bathrooms must be a non-negative integer')
-        .toInt(),
-
     body('minNights')
-        .notEmpty()
-        .withMessage('Minimum nights is required')
+        .optional()
         .isInt({ min: 1 })
         .withMessage('Minimum nights must be at least 1')
+        .toInt(),
+
+    body('maxNights')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('Maximum nights must be at least 1')
         .toInt()
         .custom((value, { req }) => {
-            const maxNights = parseInt(req.body.maxNights);
-            if (maxNights && value > maxNights) {
-                throw new Error('Minimum nights cannot be greater than maximum nights');
+            const minNights = Number(req.body.minNights);
+            const maxNights = Number(value);
+            
+            if (minNights && maxNights && maxNights < minNights) {
+                throw new Error('Maximum nights must be greater than or equal to minimum nights');
             }
             return true;
         }),
 
-    body('maxNights')
-        .notEmpty()
-        .withMessage('Maximum nights is required')
-        .isInt({ min: 1 })
-        .withMessage('Maximum nights must be at least 1')
-        .toInt(),
+    body('rooms')
+        .optional()
+        .custom((value) => {
+            let roomsArray = value;
+            if (typeof value === 'string') {
+                try {
+                    roomsArray = JSON.parse(value);
+                } catch (e) {
+                    throw new Error('Rooms must be a valid JSON array');
+                }
+            }
 
-    body('basePricePerNightIdr')
-        .notEmpty()
-        .withMessage('Base price per night is required')
-        .isInt({ min: 0 })
-        .withMessage('Base price must be a non-negative integer')
-        .toInt(),
+            if (roomsArray) {
+                if (!Array.isArray(roomsArray)) {
+                    throw new Error('Rooms must be an array');
+                }
+
+                if (roomsArray.length === 0) {
+                    throw new Error('At least one room is required');
+                }
+
+                roomsArray.forEach((room: any, index: number) => {
+                    if (!room.name || typeof room.name !== 'string') {
+                        throw new Error(`Room ${index + 1}: Name is required and must be a string`);
+                    }
+                    if (room.name.trim().length < 3 || room.name.trim().length > 120) {
+                        throw new Error(`Room ${index + 1}: Name must be between 3 and 120 characters`);
+                    }
+
+                    if (room.description !== undefined && room.description !== null && room.description !== '') {
+                        if (typeof room.description !== 'string') {
+                            throw new Error(`Room ${index + 1}: Description must be a string`);
+                        }
+                    }
+
+                    if (room.maxGuests === undefined || room.maxGuests === null) {
+                        throw new Error(`Room ${index + 1}: Max guests is required`);
+                    }
+                    const maxGuests = Number(room.maxGuests);
+                    if (isNaN(maxGuests) || maxGuests < 1) {
+                        throw new Error(`Room ${index + 1}: Max guests must be at least 1`);
+                    }
+
+                    if (room.beds === undefined || room.beds === null) {
+                        throw new Error(`Room ${index + 1}: Beds is required`);
+                    }
+                    const beds = Number(room.beds);
+                    if (isNaN(beds) || beds < 1) {
+                        throw new Error(`Room ${index + 1}: Beds must be at least 1`);
+                    }
+
+                    if (room.bathrooms === undefined || room.bathrooms === null) {
+                        throw new Error(`Room ${index + 1}: Bathrooms is required`);
+                    }
+                    const bathrooms = Number(room.bathrooms);
+                    if (isNaN(bathrooms) || bathrooms < 1) {
+                        throw new Error(`Room ${index + 1}: Bathrooms must be at least 1`);
+                    }
+
+                    if (room.basePricePerNightIdr === undefined || room.basePricePerNightIdr === null) {
+                        throw new Error(`Room ${index + 1}: Base price is required`);
+                    }
+                    const price = Number(room.basePricePerNightIdr);
+                    if (isNaN(price) || price < 0) {
+                        throw new Error(`Room ${index + 1}: Base price must be 0 or greater`);
+                    }
+                });
+
+                
+            }
+
+            return true;
+        }),
 
     body('status')
         .optional()
@@ -145,7 +184,6 @@ export const createPropertyValidation: ValidationChain[] = [
         .withMessage('Status must be DRAFT, ACTIVE, or INACTIVE'),
 ];
 
-// Validation rules for updating a property
 export const updatePropertyValidation: ValidationChain[] = [
     body('title')
         .optional()
@@ -197,54 +235,6 @@ export const updatePropertyValidation: ValidationChain[] = [
             return true;
         }),
 
-    body('maxGuests')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Maximum guests must be at least 1')
-        .toInt(),
-
-    body('bedrooms')
-        .optional()
-        .isInt({ min: 0 })
-        .withMessage('Bedrooms must be a non-negative integer')
-        .toInt(),
-
-    body('beds')
-        .optional()
-        .isInt({ min: 0 })
-        .withMessage('Beds must be a non-negative integer')
-        .toInt(),
-
-    body('bathrooms')
-        .optional()
-        .isInt({ min: 0 })
-        .withMessage('Bathrooms must be a non-negative integer')
-        .toInt(),
-
-    body('minNights')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Minimum nights must be at least 1')
-        .toInt()
-        .custom((value, { req }) => {
-            const maxNights = req.body.maxNights;
-            if (maxNights && value > parseInt(maxNights)) {
-                throw new Error('Minimum nights cannot be greater than maximum nights');
-            }
-            return true;
-        }),
-
-    body('maxNights')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Maximum nights must be at least 1')
-        .toInt(),
-
-    body('basePricePerNightIdr')
-        .optional()
-        .isInt({ min: 0 })
-        .withMessage('Base price must be a non-negative integer')
-        .toInt(),
 
     body('status')
         .optional()

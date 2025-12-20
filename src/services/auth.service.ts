@@ -132,7 +132,6 @@ export async function loginUserService({ email, password }: Pick<User, 'email' |
   
   const { password: _pw, ...safeUser } = user;
 
-  console.log('JWT_SECRET_KEY:', process.env.JWT_SECRET_KEY ? 'LOADED' : 'NOT LOADED');
   const token = jwtSign({ userId: user?.id, role: user?.role }, process.env.JWT_SECRET_KEY!, { expiresIn: '1d' });
 
   return {

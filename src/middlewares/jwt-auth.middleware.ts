@@ -26,9 +26,7 @@ export const roleVerify = (authorizeUser: string[]) => {
  
   return (req: Request, res: Response, next: NextFunction) => {
     const payload = res.locals.payload; 
-    console.log(payload);
     if (authorizeUser.includes(payload.role)) {
-      
       next();
       return;
     }

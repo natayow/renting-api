@@ -1,6 +1,15 @@
 import prisma from '../config/prisma-client';
 import { Property, PropertyStatus } from '../generated/prisma';
 
+interface RoomInput {
+    name: string;
+    description?: string;
+    maxGuests: number;
+    beds: number;
+    bathrooms: number;
+    basePricePerNightIdr: number;
+}
+
 interface CreatePropertyInput {
     adminUserId: string;
     title: string;
@@ -19,6 +28,7 @@ interface CreatePropertyInput {
     status: PropertyStatus;
     files: Express.Multer.File[];
     facilityIds?: string[];
+    rooms?: RoomInput[];
 }
 
 
@@ -69,7 +79,8 @@ export async function createPropertyService({
     basePricePerNightIdr, 
     status, 
     files,
-    facilityIds
+    facilityIds,
+    rooms
 }: CreatePropertyInput) {
     try {
         return await prisma.$transaction(async (tx) => {
@@ -117,23 +128,31 @@ export async function createPropertyService({
                 });
             }
 
-            // Create facility relationships
             if (facilityIds && facilityIds.length > 0) {
-                console.log('Creating facility relationships for:', facilityIds);
                 const facilityData = facilityIds.map((facilityId) => ({
                     propertyId: newProperty.id,
                     facilityId: facilityId,
                 }));
 
-                console.log('Facility data to create:', facilityData);
-
                 await tx.propertyFacility.createMany({
                     data: facilityData,
                 });
-                
-                console.log('Facilities created successfully');
-            } else {
-                console.log('No facilityIds provided or array is empty');
+            }
+
+            if (rooms && rooms.length > 0) {
+                const roomData = rooms.map((room) => ({
+                    propertyId: newProperty.id,
+                    name: room.name,
+                    description: room.description || null,
+                    maxGuests: Number(room.maxGuests) || 1,
+                    beds: Number(room.beds) || 1,
+                    bathrooms: Number(room.bathrooms) || 1,
+                    basePricePerNightIdr: Number(room.basePricePerNightIdr) || 0,
+                }));
+
+                await tx.room.createMany({
+                    data: roomData,
+                });
             }
 
             const completeProperty = await tx.property.findUnique({
@@ -155,6 +174,7 @@ export async function createPropertyService({
                             facility: true,
                         },
                     },
+                    rooms: true,
                 },
             });
 
@@ -211,7 +231,6 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         };
     }
 
-    // Search filter by property name, city, or address
     if (filters?.search) {
         where.OR = [
             {
@@ -239,12 +258,10 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         ];
     }
 
-    // Pagination
     const page = filters?.page || 1;
     const limit = filters?.limit || 12;
     const skip = (page - 1) * limit;
 
-    // Sorting
     let orderBy: any = { createdAt: 'desc' };
     if (filters?.sortBy === 'name') {
         orderBy = { title: filters.sortOrder || 'asc' };
@@ -252,7 +269,6 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         orderBy = { basePricePerNightIdr: filters.sortOrder || 'asc' };
     }
 
-    // Get total count for pagination
     const total = await prisma.property.count({ where });
 
     const properties = await prisma.property.findMany({
@@ -295,7 +311,6 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         take: limit,
     });
 
-    // Calculate minimum room price for each property
     const propertiesWithMinPrice = properties.map(property => {
         let minPrice = property.basePricePerNightIdr;
         
