@@ -14,19 +14,29 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@types/mime": "^3.0.4",
+    "@types/react-datepicker": "^6.2.0",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "express-validator": "^7.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "react-datepicker": "^9.0.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
     "nodemon": "^3.1.11",
     "prisma": "^6.18.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "prisma": {
-  "seed": "node prisma/seed.js"
-}
+    "seed": "node prisma/seed.js"
+  }
 }
