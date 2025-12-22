@@ -20,13 +20,6 @@ export async function createPropertyController(req: Request, res: Response) {
             city,
             country,
             address,
-            maxGuests,
-            bedrooms,
-            beds,
-            bathrooms,
-            minNights,
-            maxNights,
-            basePricePerNightIdr,
             status,
         } = req.body;
 
@@ -77,13 +70,6 @@ export async function createPropertyController(req: Request, res: Response) {
             city,
             country,
             address,
-            maxGuests,
-            bedrooms,
-            beds,
-            bathrooms,
-            minNights,
-            maxNights,
-            basePricePerNightIdr,
             status,
             files,
             facilityIds,
@@ -125,7 +111,6 @@ export async function getAllPropertiesController(req: Request, res: Response) {
             adminUserId,
             minPrice,
             maxPrice,
-            minGuests,
             search,
             page,
             limit,
@@ -141,7 +126,6 @@ export async function getAllPropertiesController(req: Request, res: Response) {
         if (adminUserId) filters.adminUserId = adminUserId as string;
         if (minPrice) filters.minPrice = parseInt(minPrice as string);
         if (maxPrice) filters.maxPrice = parseInt(maxPrice as string);
-        if (minGuests) filters.minGuests = parseInt(minGuests as string);
         if (search) filters.search = search as string;
         if (page) filters.page = parseInt(page as string);
         if (limit) filters.limit = parseInt(limit as string);
@@ -201,14 +185,11 @@ export async function updatePropertyController(req: Request, res: Response) {
             description,
             typeId,
             locationId,
-            maxGuests,
-            bedrooms,
-            beds,
-            bathrooms,
-            minNights,
-            maxNights,
-            basePricePerNightIdr,
+            city,
+            country,
+            address,
             status,
+            facilityIds,
         } = req.body;
 
        
@@ -219,14 +200,11 @@ export async function updatePropertyController(req: Request, res: Response) {
                 description,
                 typeId,
                 locationId,
-                maxGuests,
-                bedrooms,
-                beds,
-                bathrooms,
-                minNights,
-                maxNights,
-                basePricePerNightIdr,
+                city,
+                country,
+                address,
                 status,
+                facilityIds,
             },
         );
 

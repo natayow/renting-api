@@ -150,15 +150,7 @@ model Property {
   typeId      String? @db.Uuid
   locationId  String  @db.Uuid
 
-  maxGuests Int @default(1)
-  bedrooms  Int @default(0)
-  beds      Int @default(0)
-  bathrooms Int @default(0)
-  minNights Int @default(1)
-  maxNights Int @default(30)
-
-  basePricePerNightIdr Int            @default(0)
-  status               PropertyStatus @default(DRAFT)
+  status PropertyStatus @default(DRAFT)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime?
@@ -179,7 +171,6 @@ model Property {
   @@index([adminUserId])
   @@index([locationId])
   @@index([status])
-  @@index([basePricePerNightIdr])
 }
 
 model PropertyImage {

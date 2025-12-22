@@ -18,13 +18,6 @@ interface CreatePropertyInput {
     city: string;
     country: string;
     address: string;
-    maxGuests: number;
-    bedrooms: number;
-    beds: number;
-    bathrooms: number;
-    minNights: number;
-    maxNights: number;
-    basePricePerNightIdr: number;
     status: PropertyStatus;
     files: Express.Multer.File[];
     facilityIds?: string[];
@@ -37,14 +30,11 @@ interface UpdatePropertyInput {
     description?: string;
     typeId?: string;
     locationId?: string;
-    maxGuests?: number;
-    bedrooms?: number;
-    beds?: number;
-    bathrooms?: number;
-    minNights?: number;
-    maxNights?: number;
-    basePricePerNightIdr?: number;
+    city?: string;
+    country?: string;
+    address?: string;
     status?: PropertyStatus;
+    facilityIds?: string[];
 }
 
 interface GetPropertiesFilters {
@@ -54,7 +44,6 @@ interface GetPropertiesFilters {
     adminUserId?: string;
     minPrice?: number;
     maxPrice?: number;
-    minGuests?: number;
     search?: string;
     page?: number;
     limit?: number;
@@ -70,13 +59,6 @@ export async function createPropertyService({
     city, 
     country, 
     address, 
-    maxGuests, 
-    bedrooms, 
-    beds, 
-    bathrooms, 
-    minNights, 
-    maxNights, 
-    basePricePerNightIdr, 
     status, 
     files,
     facilityIds,
@@ -107,13 +89,6 @@ export async function createPropertyService({
                     }),
                     title,
                     description,
-                    maxGuests: Number(maxGuests) || 1,
-                    bedrooms: Number(bedrooms) || 0,
-                    beds: Number(beds) || 0,
-                    bathrooms: Number(bathrooms) || 0,
-                    minNights: Number(minNights) || 1,
-                    maxNights: Number(maxNights) || 30,
-                    basePricePerNightIdr: Number(basePricePerNightIdr) || 0,
                     status: status || 'DRAFT',
                 },
             });
@@ -215,19 +190,15 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         where.adminUserId = filters.adminUserId;
     }
 
+    // Price filtering is now handled via rooms
     if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
-        where.basePricePerNightIdr = {};
-        if (filters.minPrice !== undefined) {
-            where.basePricePerNightIdr.gte = filters.minPrice;
-        }
-        if (filters.maxPrice !== undefined) {
-            where.basePricePerNightIdr.lte = filters.maxPrice;
-        }
-    }
-
-    if (filters?.minGuests !== undefined) {
-        where.maxGuests = {
-            gte: filters.minGuests,
+        where.rooms = {
+            some: {
+                basePricePerNightIdr: {
+                    ...(filters.minPrice !== undefined && { gte: filters.minPrice }),
+                    ...(filters.maxPrice !== undefined && { lte: filters.maxPrice }),
+                },
+            },
         };
     }
 
@@ -265,9 +236,8 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
     let orderBy: any = { createdAt: 'desc' };
     if (filters?.sortBy === 'name') {
         orderBy = { title: filters.sortOrder || 'asc' };
-    } else if (filters?.sortBy === 'price') {
-        orderBy = { basePricePerNightIdr: filters.sortOrder || 'asc' };
     }
+    // Note: Sorting by price is no longer directly supported as price is now in rooms
 
     const total = await prisma.property.count({ where });
 
@@ -312,12 +282,11 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
     });
 
     const propertiesWithMinPrice = properties.map(property => {
-        let minPrice = property.basePricePerNightIdr;
+        let minPrice = 0;
         
         if (property.rooms && property.rooms.length > 0) {
             const roomPrices = property.rooms.map(room => room.basePricePerNightIdr);
-            const minRoomPrice = Math.min(...roomPrices);
-            minPrice = minRoomPrice > 0 ? minRoomPrice : property.basePricePerNightIdr;
+            minPrice = Math.min(...roomPrices);
         }
 
         return {
@@ -394,6 +363,9 @@ export async function updatePropertyService(id: string, data: UpdatePropertyInpu
             id,
             deletedAt: null,
         },
+        include: {
+            location: true,
+        },
     });
 
     if (!existingProperty) {
@@ -405,44 +377,82 @@ export async function updatePropertyService(id: string, data: UpdatePropertyInpu
     }
 
     try {
-        const updateData: any = {
-            updatedAt: new Date(),
-        };
+        return await prisma.$transaction(async (tx) => {
+            // Update location if city, country, or address provided
+            if (data.city || data.country || data.address) {
+                await tx.location.update({
+                    where: { id: existingProperty.locationId },
+                    data: {
+                        ...(data.city && { city: data.city }),
+                        ...(data.country && { country: data.country }),
+                        ...(data.address && { address: data.address }),
+                        updatedAt: new Date(),
+                    },
+                });
+            }
 
-        if (data.title !== undefined) updateData.title = data.title.trim();
-        if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-        if (data.typeId !== undefined) updateData.typeId = data.typeId || null;
-        if (data.locationId !== undefined) updateData.locationId = data.locationId;
-        if (data.maxGuests !== undefined) updateData.maxGuests = data.maxGuests;
-        if (data.bedrooms !== undefined) updateData.bedrooms = data.bedrooms;
-        if (data.beds !== undefined) updateData.beds = data.beds;
-        if (data.bathrooms !== undefined) updateData.bathrooms = data.bathrooms;
-        if (data.minNights !== undefined) updateData.minNights = data.minNights;
-        if (data.maxNights !== undefined) updateData.maxNights = data.maxNights;
-        if (data.basePricePerNightIdr !== undefined) updateData.basePricePerNightIdr = data.basePricePerNightIdr;
-        if (data.status !== undefined) updateData.status = data.status;
+            // Prepare property update data
+            const updateData: any = {
+                updatedAt: new Date(),
+            };
 
-        const updatedProperty = await prisma.property.update({
-            where: { id },
-            data: updateData,
-            include: {
-                adminUser: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        email: true,
-                        role: true,
+            if (data.title !== undefined) updateData.title = data.title.trim();
+            if (data.description !== undefined) updateData.description = data.description?.trim() || null;
+            if (data.typeId !== undefined) updateData.typeId = data.typeId || null;
+            if (data.locationId !== undefined) updateData.locationId = data.locationId;
+            if (data.status !== undefined) updateData.status = data.status;
+
+            // Update property
+            const updatedProperty = await tx.property.update({
+                where: { id },
+                data: updateData,
+            });
+
+            // Update facilities if provided
+            if (data.facilityIds !== undefined) {
+                // Delete existing facilities
+                await tx.propertyFacility.deleteMany({
+                    where: { propertyId: id },
+                });
+
+                // Add new facilities
+                if (data.facilityIds.length > 0) {
+                    await tx.propertyFacility.createMany({
+                        data: data.facilityIds.map(facilityId => ({
+                            propertyId: id,
+                            facilityId,
+                        })),
+                    });
+                }
+            }
+
+            // Fetch and return complete property with relations
+            const completeProperty = await tx.property.findUnique({
+                where: { id },
+                include: {
+                    adminUser: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            email: true,
+                            role: true,
+                        },
+                    },
+                    type: true,
+                    location: true,
+                    images: {
+                        where: { deletedAt: null },
+                    },
+                    facilities: {
+                        include: {
+                            facility: true,
+                        },
                     },
                 },
-                type: true,
-                location: true,
-                images: {
-                    where: { deletedAt: null },
-                },
-            },
-        });
+            });
 
-        return updatedProperty;
+            return completeProperty;
+        });
     } catch (error: any) {
         if (error.code === 'P2025') {
             throw new Error('Property not found');
@@ -504,6 +514,10 @@ export async function getPropertiesByAdminService(adminUserId: string) {
                 include: {
                     facility: true,
                 },
+            },
+            rooms: {
+                where: { deletedAt: null },
+                orderBy: { createdAt: 'asc' },
             },
         },
         orderBy: {

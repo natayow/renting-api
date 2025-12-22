@@ -83,27 +83,6 @@ export const createPropertyValidation: ValidationChain[] = [
         .isLength({ min: 5, max: 500 })
         .withMessage('Address must be between 5 and 500 characters'),
 
-    body('minNights')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Minimum nights must be at least 1')
-        .toInt(),
-
-    body('maxNights')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Maximum nights must be at least 1')
-        .toInt()
-        .custom((value, { req }) => {
-            const minNights = Number(req.body.minNights);
-            const maxNights = Number(value);
-            
-            if (minNights && maxNights && maxNights < minNights) {
-                throw new Error('Maximum nights must be greater than or equal to minimum nights');
-            }
-            return true;
-        }),
-
     body('rooms')
         .optional()
         .custom((value) => {
