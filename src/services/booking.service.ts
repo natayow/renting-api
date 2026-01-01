@@ -287,14 +287,18 @@ export async function createBookingService(
     );
 
     // Determine initial booking status based on payment method
+    // For PAYMENT_GATEWAY, auto-confirm since it's an online payment
+    // For BANK_TRANSFER, wait for admin confirmation
     const initialStatus =
         paymentMethod === 'PAYMENT_GATEWAY'
-            ? BookingStatus.WAITING_PAYMENT
+            ? BookingStatus.CONFIRMED
             : BookingStatus.WAITING_CONFIRMATION;
 
-    // Set payment due date (24 hours from now)
-    const paymentDueAt = new Date();
-    paymentDueAt.setHours(paymentDueAt.getHours() + 24);
+    // Set payment due date (24 hours from now for bank transfer, null for confirmed)
+    const paymentDueAt = paymentMethod === 'BANK_TRANSFER' ? new Date() : null;
+    if (paymentDueAt) {
+        paymentDueAt.setHours(paymentDueAt.getHours() + 24);
+    }
 
     // Create booking with payment in a transaction
     const booking = await prisma.$transaction(async (tx) => {
@@ -334,13 +338,16 @@ export async function createBookingService(
         });
 
         // Create initial payment record
+        // For PAYMENT_GATEWAY, mark as SUCCESS immediately
+        // For BANK_TRANSFER, mark as PENDING waiting for confirmation
         await tx.payment.create({
             data: {
                 bookingId: newBooking.id,
                 userId,
                 amountIdr: pricing.totalPriceIdr,
-                paymentStatus: PaymentStatus.PENDING,
+                paymentStatus: paymentMethod === 'PAYMENT_GATEWAY' ? PaymentStatus.SUCCESS : PaymentStatus.PENDING,
                 paymentMethod,
+                paidAt: paymentMethod === 'PAYMENT_GATEWAY' ? new Date() : null,
             },
         });
 
