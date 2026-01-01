@@ -3,22 +3,47 @@ import jwt from 'jsonwebtoken';
 
 export const jwtVerify = (jwtSecretKey: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const token = req?.headers?.authorization?.split(' ')[1];
+    try {
+      const authHeader = req?.headers?.authorization;
+      
+      if (!authHeader) {
+        res.status(401).json({
+          success: false,
+          message: 'Authorization header is required',
+          data: null,
+        });
+        return;
+      }
 
-    if (!token) {
+      const token = authHeader.split(' ')[1];
+
+      if (!token) {
+        res.status(401).json({
+          success: false,
+          message: 'Token must be provided',
+          data: null,
+        });
+        return;
+      }
+
+      const payload = jwt.verify(token, jwtSecretKey);
+
+      res.locals.payload = payload;
+
+      next();
+    } catch (error: any) {
+      console.error('JWT verification error:', error.message);
       res.status(401).json({
         success: false,
-        message: 'Token must be provide',
+        message: error.name === 'TokenExpiredError' 
+          ? 'Token has expired' 
+          : error.name === 'JsonWebTokenError'
+          ? 'Invalid token'
+          : 'Token verification failed',
         data: null,
       });
       return;
     }
-
-    const payload = await jwt.verify(token, jwtSecretKey);
-
-    res.locals.payload = payload;
-
-    next();
   };
 };
 
