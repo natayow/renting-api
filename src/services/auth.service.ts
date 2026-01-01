@@ -150,13 +150,88 @@ export async function getUserByIdService(id: string) {
             email: true,
             phoneNumber: true,
             role: true,
-            
+            adminProfile: {
+                select: {
+                    id: true,
+                    displayName: true,
+                    description: true,
+                    bankName: true,
+                    bankAccountNo: true,
+                    bankAccountName: true,
+                    createdAt: true,
+                }
+            },
             createdAt: true,
             updatedAt: true,
         },
     });
 
     return user;
+}
+
+export async function createAdminProfileService(userId: string, data: {
+    displayName: string;
+    description?: string;
+    bankName?: string;
+    bankAccountNo?: string;
+    bankAccountName?: string;
+}) {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { adminProfile: true }
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    // Check if user already has an admin profile
+    if (user.adminProfile) {
+        throw new Error('Admin profile already exists for this user');
+    }
+
+    // Create admin profile and update user role in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+        // Create admin profile
+        const adminProfile = await tx.adminProfile.create({
+            data: {
+                userId,
+                displayName: data.displayName.trim(),
+                description: data.description?.trim() || null,
+                bankName: data.bankName?.trim() || null,
+                bankAccountNo: data.bankAccountNo?.trim() || null,
+                bankAccountName: data.bankAccountName?.trim() || null,
+            }
+        });
+
+        // Update user role to ADMIN
+        const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: { role: 'ADMIN' },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phoneNumber: true,
+                role: true,
+                adminProfile: {
+                    select: {
+                        id: true,
+                        displayName: true,
+                        description: true,
+                        bankName: true,
+                        bankAccountNo: true,
+                        bankAccountName: true,
+                    }
+                }
+            }
+        });
+
+        return updatedUser;
+    });
+
+    return result;
 }
 
 
