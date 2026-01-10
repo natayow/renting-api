@@ -132,7 +132,6 @@ export async function loginUserService({ email, password }: Pick<User, 'email' |
   
   const { password: _pw, ...safeUser } = user;
 
-  console.log('JWT_SECRET_KEY:', process.env.JWT_SECRET_KEY ? 'LOADED' : 'NOT LOADED');
   const token = jwtSign({ userId: user?.id, role: user?.role }, process.env.JWT_SECRET_KEY!, { expiresIn: '1d' });
 
   return {
@@ -151,13 +150,83 @@ export async function getUserByIdService(id: string) {
             email: true,
             phoneNumber: true,
             role: true,
-            
+            adminProfile: {
+                select: {
+                    id: true,
+                    displayName: true,
+                    description: true,
+                    bankName: true,
+                    bankAccountNo: true,
+                    bankAccountName: true,
+                    createdAt: true,
+                }
+            },
             createdAt: true,
             updatedAt: true,
         },
     });
 
     return user;
+}
+
+export async function createAdminProfileService(userId: string, data: {
+    displayName: string;
+    description?: string;
+    bankName?: string;
+    bankAccountNo?: string;
+    bankAccountName?: string;
+}) {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { adminProfile: true }
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    if (user.adminProfile) {
+        throw new Error('Admin profile already exists for this user');
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+        const adminProfile = await tx.adminProfile.create({
+            data: {
+                userId,
+                displayName: data.displayName.trim(),
+                description: data.description?.trim() || null,
+                bankName: data.bankName?.trim() || null,
+                bankAccountNo: data.bankAccountNo?.trim() || null,
+                bankAccountName: data.bankAccountName?.trim() || null,
+            }
+        });
+
+        const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: { role: 'ADMIN' },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phoneNumber: true,
+                role: true,
+                adminProfile: {
+                    select: {
+                        id: true,
+                        displayName: true,
+                        description: true,
+                        bankName: true,
+                        bankAccountNo: true,
+                        bankAccountName: true,
+                    }
+                }
+            }
+        });
+
+        return updatedUser;
+    });
+
+    return result;
 }
 
 

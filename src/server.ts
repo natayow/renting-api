@@ -7,6 +7,7 @@ import propertyRouter from './routers/property.router';
 import { customCors } from './middlewares/cors.middleware';
 import facilityRouter from './routers/facility.router';
 import roomRouter from './routers/room.router';
+import bookingRouter from './routers/booking.router';
 
 const app: Express = express();
 
@@ -24,6 +25,7 @@ app.use('/api/locations', locationRouter);
 app.use('/api/properties', propertyRouter);
 app.use('/api/facilities', facilityRouter);
 app.use('/api/rooms', roomRouter);
+app.use('/api/bookings', bookingRouter);
 
 app.get('/', (_: Request, res: Response) => {
     res.send('<h1>Hello World!</h1>');

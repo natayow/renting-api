@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import {  getUserByIdService, loginUserService, registerAdminService, registerUserService } from '../services/auth.service';
+import {  createAdminProfileService, getUserByIdService, loginUserService, registerAdminService, registerUserService } from '../services/auth.service';
 
 import bcrypt from 'bcrypt';
 
@@ -121,4 +121,57 @@ export async function getUserByIdController(req: Request, res: Response) {
         res.status(500).json({ success: false, message: error?.message, data: null });
     }
 }
+
+export async function createAdminProfileController(req: Request, res: Response) {
+    try {
+        const payload = res.locals.payload;
+        const userId = payload?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized',
+                data: null
+            });
+        }
+
+        const { displayName, description, bankName, bankAccountNo, bankAccountName } = req.body;
+
+        if (!displayName) {
+            return res.status(400).json({
+                success: false,
+                message: 'Display name is required',
+                data: null
+            });
+        }
+
+        const result = await createAdminProfileService(userId, {
+            displayName,
+            description,
+            bankName,
+            bankAccountNo,
+            bankAccountName
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Admin profile created successfully. Your role has been upgraded to ADMIN.',
+            data: result
+        });
+    } catch (error: any) {
+        let statusCode = 500;
+        if (error.message === 'User not found') {
+            statusCode = 404;
+        } else if (error.message === 'Admin profile already exists for this user') {
+            statusCode = 400;
+        }
+        
+        res.status(statusCode).json({ 
+            success: false, 
+            message: error?.message || 'Failed to create admin profile', 
+            data: null 
+        });
+    }
+}
+
 
