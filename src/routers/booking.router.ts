@@ -32,7 +32,6 @@ const handleValidationErrors = (req: Request, res: Response, next: NextFunction)
 
 const router = Router();
 
-// Public routes
 router.get(
     '/available-rooms',
     availableRoomsValidation,
@@ -47,10 +46,8 @@ router.post(
     calculateBookingPriceController
 );
 
-// Webhook route (no JWT required, but should validate signature)
 router.post('/webhook/payment', paymentGatewayWebhookController);
 
-// Protected routes (require authentication)
 router.post(
     '/',
     jwtVerify(JWT_SECRET_KEY),

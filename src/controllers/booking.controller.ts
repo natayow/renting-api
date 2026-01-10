@@ -10,10 +10,6 @@ import {
 } from '../services/booking.service';
 import { CreateBookingInput } from '../types/booking.types';
 
-/**
- * Create a new booking
- * POST /api/bookings
- */
 export async function createBookingController(req: Request, res: Response) {
     try {
         const {
@@ -26,7 +22,6 @@ export async function createBookingController(req: Request, res: Response) {
             paymentMethod,
         } = req.body;
 
-        // Get userId from JWT payload (set by JWT middleware in res.locals)
         const payload = res.locals.payload as { userId: string; role: string };
         const userId = payload?.userId;
 
@@ -38,7 +33,6 @@ export async function createBookingController(req: Request, res: Response) {
             });
         }
 
-        // Validate required fields
         if (
             !propertyId ||
             !roomId ||
@@ -55,7 +49,6 @@ export async function createBookingController(req: Request, res: Response) {
             });
         }
 
-        // Validate payment method
         if (!['BANK_TRANSFER', 'PAYMENT_GATEWAY'].includes(paymentMethod)) {
             return res.status(400).json({
                 success: false,
@@ -104,10 +97,6 @@ export async function createBookingController(req: Request, res: Response) {
     }
 }
 
-/**
- * Get booking by ID
- * GET /api/bookings/:id
- */
 export async function getBookingByIdController(req: Request, res: Response) {
     try {
         const { id } = req.params;
@@ -116,9 +105,7 @@ export async function getBookingByIdController(req: Request, res: Response) {
 
         const booking = await getBookingByIdService(id);
 
-        // Check if user is authorized to view this booking
         if (booking.userId !== userId) {
-            // Check if user is admin (optional - add admin check here)
             return res.status(403).json({
                 success: false,
                 message: 'Unauthorized to view this booking',
@@ -144,10 +131,7 @@ export async function getBookingByIdController(req: Request, res: Response) {
     }
 }
 
-/**
- * Get user's bookings
- * GET /api/bookings/user/me
- */
+
 export async function getUserBookingsController(req: Request, res: Response) {
     try {
         const payload = res.locals.payload as { userId: string; role: string };
@@ -179,10 +163,7 @@ export async function getUserBookingsController(req: Request, res: Response) {
     }
 }
 
-/**
- * Get available rooms for a property
- * GET /api/bookings/available-rooms?propertyId=xxx&checkInDate=xxx&checkOutDate=xxx&guestsCount=2
- */
+
 export async function getAvailableRoomsController(req: Request, res: Response) {
     try {
         const { propertyId, checkInDate, checkOutDate, guestsCount } = req.query;
@@ -220,10 +201,7 @@ export async function getAvailableRoomsController(req: Request, res: Response) {
     }
 }
 
-/**
- * Calculate booking price
- * POST /api/bookings/calculate-price
- */
+
 export async function calculateBookingPriceController(req: Request, res: Response) {
     try {
         const { roomId, checkInDate, checkOutDate } = req.body;
@@ -260,24 +238,11 @@ export async function calculateBookingPriceController(req: Request, res: Respons
     }
 }
 
-/**
- * Payment gateway webhook handler
- * POST /api/bookings/webhook/payment
- */
 export async function paymentGatewayWebhookController(req: Request, res: Response) {
     try {
         const { orderId, transactionId, status, amount, signature } = req.body;
 
-        // Validate webhook signature (implement your payment gateway's signature verification)
-        // This is a placeholder - implement actual signature verification
-        // const isValidSignature = verifyWebhookSignature(req.body, signature);
-        // if (!isValidSignature) {
-        //     return res.status(401).json({
-        //         success: false,
-        //         message: 'Invalid webhook signature',
-        //     });
-        // }
-
+      
         if (!transactionId || !status || amount === undefined) {
             return res.status(400).json({
                 success: false,
@@ -306,10 +271,7 @@ export async function paymentGatewayWebhookController(req: Request, res: Respons
     }
 }
 
-/**
- * Cancel a booking
- * POST /api/bookings/:id/cancel
- */
+
 export async function cancelBookingController(req: Request, res: Response) {
     try {
         const { id } = req.params;

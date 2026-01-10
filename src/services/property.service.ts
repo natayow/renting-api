@@ -190,7 +190,6 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         where.adminUserId = filters.adminUserId;
     }
 
-    // Price filtering is now handled via rooms
     if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
         where.rooms = {
             some: {
@@ -237,7 +236,6 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
     if (filters?.sortBy === 'name') {
         orderBy = { title: filters.sortOrder || 'asc' };
     }
-    // Note: Sorting by price is no longer directly supported as price is now in rooms
 
     const total = await prisma.property.count({ where });
 
@@ -378,7 +376,6 @@ export async function updatePropertyService(id: string, data: UpdatePropertyInpu
 
     try {
         return await prisma.$transaction(async (tx) => {
-            // Update location if city, country, or address provided
             if (data.city || data.country || data.address) {
                 await tx.location.update({
                     where: { id: existingProperty.locationId },
@@ -391,7 +388,6 @@ export async function updatePropertyService(id: string, data: UpdatePropertyInpu
                 });
             }
 
-            // Prepare property update data
             const updateData: any = {
                 updatedAt: new Date(),
             };
@@ -402,20 +398,16 @@ export async function updatePropertyService(id: string, data: UpdatePropertyInpu
             if (data.locationId !== undefined) updateData.locationId = data.locationId;
             if (data.status !== undefined) updateData.status = data.status;
 
-            // Update property
             const updatedProperty = await tx.property.update({
                 where: { id },
                 data: updateData,
             });
 
-            // Update facilities if provided
             if (data.facilityIds !== undefined) {
-                // Delete existing facilities
                 await tx.propertyFacility.deleteMany({
                     where: { propertyId: id },
                 });
 
-                // Add new facilities
                 if (data.facilityIds.length > 0) {
                     await tx.propertyFacility.createMany({
                         data: data.facilityIds.map(facilityId => ({
@@ -426,7 +418,6 @@ export async function updatePropertyService(id: string, data: UpdatePropertyInpu
                 }
             }
 
-            // Fetch and return complete property with relations
             const completeProperty = await tx.property.findUnique({
                 where: { id },
                 include: {

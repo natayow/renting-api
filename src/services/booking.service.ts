@@ -8,17 +8,13 @@ import {
     BookingDetailsResponse,
 } from '../types/booking.types';
 
-/**
- * Check if a room is available for the specified date range
- * Prevents overlapping bookings
- */
+
 export async function checkRoomAvailability(
     roomId: string,
     checkInDate: Date,
     checkOutDate: Date,
     excludeBookingId?: string
 ): Promise<boolean> {
-    // Find any overlapping bookings that are not canceled or expired
     const overlappingBookings = await prisma.booking.findMany({
         where: {
             roomId,
@@ -28,17 +24,14 @@ export async function checkRoomAvailability(
             deletedAt: null,
             ...(excludeBookingId && { id: { not: excludeBookingId } }),
             OR: [
-                // Case 1: New booking starts during existing booking
                 {
                     checkInDate: { lte: checkInDate },
                     checkOutDate: { gt: checkInDate },
                 },
-                // Case 2: New booking ends during existing booking
                 {
                     checkInDate: { lt: checkOutDate },
                     checkOutDate: { gte: checkOutDate },
                 },
-                // Case 3: New booking completely contains existing booking
                 {
                     checkInDate: { gte: checkInDate },
                     checkOutDate: { lte: checkOutDate },
@@ -50,16 +43,13 @@ export async function checkRoomAvailability(
     return overlappingBookings.length === 0;
 }
 
-/**
- * Get all available rooms for a property within a date range
- */
+
 export async function getAvailableRoomsService({
     propertyId,
     checkInDate,
     checkOutDate,
     guestsCount,
 }: RoomAvailabilityQuery): Promise<AvailableRoom[]> {
-    // Validate dates
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
 
@@ -71,7 +61,6 @@ export async function getAvailableRoomsService({
         throw new Error('Check-in date cannot be in the past');
     }
 
-    // Get all rooms for the property
     const rooms = await prisma.room.findMany({
         where: {
             propertyId,
@@ -115,7 +104,6 @@ export async function getAvailableRoomsService({
         },
     });
 
-    // Map rooms with availability status
     const availableRooms: AvailableRoom[] = rooms.map((room) => ({
         id: room.id,
         name: room.name,
@@ -135,9 +123,6 @@ export async function getAvailableRoomsService({
     return availableRooms;
 }
 
-/**
- * Calculate booking price breakdown
- */
 export async function calculateBookingPrice(
     roomId: string,
     checkInDate: Date,
@@ -167,12 +152,10 @@ export async function calculateBookingPrice(
     const nightlyRates: Array<{ date: Date; pricePerNightIdr: number }> = [];
     let nightlySubtotalIdr = 0;
 
-    // Calculate price for each night
     let currentDate = new Date(checkInDate);
     for (let i = 0; i < nights; i++) {
         let priceForNight = room.basePricePerNightIdr;
 
-        // Check for special pricing
         const specialPrice = room.property.specialPrices.find((sp) => {
             return (
                 currentDate >= sp.startDate &&
@@ -194,10 +177,9 @@ export async function calculateBookingPrice(
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Calculate additional fees
-    const cleaningFeeIdr = Math.round(nightlySubtotalIdr * 0.05); // 5% cleaning fee
-    const serviceFeeIdr = Math.round(nightlySubtotalIdr * 0.03); // 3% service fee
-    const discountIdr = 0; // No discount for now
+    const cleaningFeeIdr = Math.round(nightlySubtotalIdr * 0.05); 
+    const serviceFeeIdr = Math.round(nightlySubtotalIdr * 0.03); 
+    const discountIdr = 0;
 
     const totalPriceIdr =
         nightlySubtotalIdr + cleaningFeeIdr + serviceFeeIdr - discountIdr;
@@ -212,9 +194,6 @@ export async function calculateBookingPrice(
     };
 }
 
-/**
- * Create a new booking
- */
 export async function createBookingService(
     input: CreateBookingInput
 ): Promise<BookingDetailsResponse> {
@@ -229,7 +208,6 @@ export async function createBookingService(
         paymentMethod,
     } = input;
 
-    // Validate user exists
     const user = await prisma.user.findUnique({
         where: { id: userId },
     });
@@ -238,7 +216,6 @@ export async function createBookingService(
         throw new Error('User not found');
     }
 
-    // Validate property exists
     const property = await prisma.property.findUnique({
         where: { id: propertyId },
     });
@@ -247,7 +224,6 @@ export async function createBookingService(
         throw new Error('Property not found');
     }
 
-    // Validate room exists and belongs to property
     const room = await prisma.room.findFirst({
         where: {
             id: roomId,
@@ -260,14 +236,12 @@ export async function createBookingService(
         throw new Error('Room not found or does not belong to this property');
     }
 
-    // Check if room can accommodate guests
     if (guestsCount > room.maxGuests) {
         throw new Error(
             `Room can only accommodate ${room.maxGuests} guests. You requested ${guestsCount} guests.`
         );
     }
 
-    // Check room availability
     const isAvailable = await checkRoomAvailability(
         roomId,
         checkInDate,
@@ -278,7 +252,6 @@ export async function createBookingService(
         throw new Error('Room is not available for the selected dates');
     }
 
-    // Calculate pricing
     const pricing = await calculateBookingPrice(
         roomId,
         checkInDate,
@@ -286,23 +259,17 @@ export async function createBookingService(
         nights
     );
 
-    // Determine initial booking status based on payment method
-    // For PAYMENT_GATEWAY, auto-confirm since it's an online payment
-    // For BANK_TRANSFER, wait for admin confirmation
     const initialStatus =
         paymentMethod === 'PAYMENT_GATEWAY'
             ? BookingStatus.CONFIRMED
             : BookingStatus.WAITING_CONFIRMATION;
 
-    // Set payment due date (24 hours from now for bank transfer, null for confirmed)
     const paymentDueAt = paymentMethod === 'BANK_TRANSFER' ? new Date() : null;
     if (paymentDueAt) {
         paymentDueAt.setHours(paymentDueAt.getHours() + 24);
     }
 
-    // Create booking with payment in a transaction
     const booking = await prisma.$transaction(async (tx) => {
-        // Create the booking
         const newBooking = await tx.booking.create({
             data: {
                 userId,
@@ -337,9 +304,6 @@ export async function createBookingService(
             },
         });
 
-        // Create initial payment record
-        // For PAYMENT_GATEWAY, mark as SUCCESS immediately
-        // For BANK_TRANSFER, mark as PENDING waiting for confirmation
         await tx.payment.create({
             data: {
                 bookingId: newBooking.id,
@@ -354,15 +318,11 @@ export async function createBookingService(
         return newBooking;
     });
 
-    // Fetch complete booking details
     const bookingDetails = await getBookingByIdService(booking.id);
 
     return bookingDetails;
 }
 
-/**
- * Get booking by ID
- */
 export async function getBookingByIdService(
     bookingId: string
 ): Promise<BookingDetailsResponse> {
@@ -432,9 +392,6 @@ export async function getBookingByIdService(
     };
 }
 
-/**
- * Get user's bookings
- */
 export async function getUserBookingsService(userId: string) {
     const bookings = await prisma.booking.findMany({
         where: {
@@ -466,16 +423,11 @@ export async function getUserBookingsService(userId: string) {
     return bookings;
 }
 
-/**
- * Process payment gateway webhook
- * Auto-confirm booking if payment is successful
- */
 export async function processPaymentGatewayWebhook(
     transactionId: string,
     status: 'success' | 'pending' | 'failed',
     amount: number
 ) {
-    // Find payment by provider transaction ID
     const payment = await prisma.payment.findFirst({
         where: {
             providerTxId: transactionId,
@@ -489,15 +441,12 @@ export async function processPaymentGatewayWebhook(
         throw new Error('Payment not found');
     }
 
-    // Verify amount matches
     if (payment.amountIdr !== amount) {
         throw new Error('Payment amount mismatch');
     }
 
-    // Update payment and booking status based on webhook status
     if (status === 'success') {
         await prisma.$transaction(async (tx) => {
-            // Update payment status
             await tx.payment.update({
                 where: { id: payment.id },
                 data: {
@@ -506,7 +455,6 @@ export async function processPaymentGatewayWebhook(
                 },
             });
 
-            // Auto-confirm booking
             await tx.booking.update({
                 where: { id: payment.bookingId },
                 data: {
@@ -514,12 +462,11 @@ export async function processPaymentGatewayWebhook(
                 },
             });
 
-            // Create email notification record
             await tx.emailNotification.create({
                 data: {
                     bookingId: payment.bookingId,
                     type: 'BOOKING_CONFIRMED',
-                    recipientEmail: '', // Would be populated from user email
+                    recipientEmail: '', 
                     payloadJson: JSON.stringify({
                         bookingId: payment.bookingId,
                         confirmedAt: new Date(),
@@ -529,7 +476,6 @@ export async function processPaymentGatewayWebhook(
         });
     } else if (status === 'failed') {
         await prisma.$transaction(async (tx) => {
-            // Update payment status
             await tx.payment.update({
                 where: { id: payment.id },
                 data: {
@@ -538,7 +484,6 @@ export async function processPaymentGatewayWebhook(
                 },
             });
 
-            // Mark booking as expired if no other successful payment exists
             const successfulPayments = await tx.payment.count({
                 where: {
                     bookingId: payment.bookingId,
@@ -560,9 +505,7 @@ export async function processPaymentGatewayWebhook(
     return await getBookingByIdService(payment.bookingId);
 }
 
-/**
- * Cancel a booking
- */
+
 export async function cancelBookingService(
     bookingId: string,
     userId: string,
@@ -612,9 +555,7 @@ export async function cancelBookingService(
     return updatedBooking;
 }
 
-/**
- * Calculate booking price (external-facing)
- */
+
 export async function calculateBookingPriceService(
     roomId: string,
     checkInDate: string,

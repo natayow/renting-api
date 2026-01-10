@@ -176,7 +176,6 @@ export async function createAdminProfileService(userId: string, data: {
     bankAccountNo?: string;
     bankAccountName?: string;
 }) {
-    // Check if user exists
     const user = await prisma.user.findUnique({
         where: { id: userId },
         include: { adminProfile: true }
@@ -186,14 +185,11 @@ export async function createAdminProfileService(userId: string, data: {
         throw new Error('User not found');
     }
 
-    // Check if user already has an admin profile
     if (user.adminProfile) {
         throw new Error('Admin profile already exists for this user');
     }
 
-    // Create admin profile and update user role in a transaction
     const result = await prisma.$transaction(async (tx) => {
-        // Create admin profile
         const adminProfile = await tx.adminProfile.create({
             data: {
                 userId,
@@ -205,7 +201,6 @@ export async function createAdminProfileService(userId: string, data: {
             }
         });
 
-        // Update user role to ADMIN
         const updatedUser = await tx.user.update({
             where: { id: userId },
             data: { role: 'ADMIN' },
