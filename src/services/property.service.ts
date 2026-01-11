@@ -293,6 +293,13 @@ export async function getAllPropertiesService(filters?: GetPropertiesFilters) {
         };
     });
 
+    if (filters?.sortBy === 'price') {
+        propertiesWithMinPrice.sort((a, b) => {
+            const sortOrder = filters.sortOrder === 'desc' ? -1 : 1;
+            return (a.minPricePerNight - b.minPricePerNight) * sortOrder;
+        });
+    }
+
     return {
         data: propertiesWithMinPrice,
         pagination: {
