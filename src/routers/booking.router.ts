@@ -15,25 +15,13 @@ import {
     calculatePriceValidation,
     availableRoomsValidation,
 } from '../validators/booking.validator';
-import { validationResult } from 'express-validator';
-import { Request, Response, NextFunction } from 'express';
-
-const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            success: false,
-            message: 'Validation failed',
-            errors: errors.array(),
-        });
-    }
-    next();
-};
+import { handleValidationErrors } from '../middlewares/validator-request';
 
 const router = Router();
 
 router.get(
     '/available-rooms',
+    jwtVerify(JWT_SECRET_KEY),
     availableRoomsValidation,
     handleValidationErrors,
     getAvailableRoomsController
@@ -41,6 +29,7 @@ router.get(
 
 router.post(
     '/calculate-price',
+    jwtVerify(JWT_SECRET_KEY),
     calculatePriceValidation,
     handleValidationErrors,
     calculateBookingPriceController
@@ -51,7 +40,6 @@ router.post('/webhook/payment', paymentGatewayWebhookController);
 router.post(
     '/',
     jwtVerify(JWT_SECRET_KEY),
-  
     createBookingValidation,
     handleValidationErrors,
     createBookingController
@@ -60,21 +48,18 @@ router.post(
 router.get(
     '/user/me',
     jwtVerify(JWT_SECRET_KEY),
-
     getUserBookingsController
 );
 
 router.get(
     '/:id',
     jwtVerify(JWT_SECRET_KEY),
-   
     getBookingByIdController
 );
 
 router.post(
     '/:id/cancel',
     jwtVerify(JWT_SECRET_KEY),
-    
     cancelBookingController
 );
 
