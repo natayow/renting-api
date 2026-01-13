@@ -16,20 +16,8 @@ import {
     updatePropertyValidation,
     updatePropertyStatusValidation 
 } from '../validators/create-property.validator';
-import { validationResult } from 'express-validator';
+import { handleValidationErrors } from '../middlewares/validator-request';
 import { Request, Response, NextFunction } from 'express';
-
-const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            success: false,
-            message: 'Validation failed',
-            errors: errors.array(),
-        });
-    }
-    next();
-};
 
 const router = Router();
 
@@ -58,12 +46,12 @@ router.post(
     createPropertyController
 );
 
-router.get('/admin/:adminUserId', getPropertiesByAdminController);
+router.get('/admin/:adminUserId', jwtVerify(JWT_SECRET_KEY), roleVerify(['ADMIN']), getPropertiesByAdminController);
 
-router.put('/:id', updatePropertyValidation, handleValidationErrors, updatePropertyController);
+router.put('/:id', jwtVerify(JWT_SECRET_KEY), roleVerify(['ADMIN']), updatePropertyValidation, handleValidationErrors, updatePropertyController);
 
-router.patch('/:id/status', updatePropertyStatusValidation, handleValidationErrors, updatePropertyStatusController);
+router.patch('/:id/status', jwtVerify(JWT_SECRET_KEY), roleVerify(['ADMIN']), updatePropertyStatusValidation, handleValidationErrors, updatePropertyStatusController);
 
-router.delete('/:id', deletePropertyController);
+router.delete('/:id', jwtVerify(JWT_SECRET_KEY), roleVerify(['ADMIN']), deletePropertyController);
 
 export default router;
