@@ -201,11 +201,52 @@ model Room {
   updatedAt DateTime?
   deletedAt DateTime?
 
-  property   Property       @relation(fields: [propertyId], references: [id])
-  facilities RoomFacility[]
-  bookings   Booking[]
+  property        Property             @relation(fields: [propertyId], references: [id])
+  facilities      RoomFacility[]
+  bookings        Booking[]
+  availability    RoomAvailability[]
+  peakSeasonRates RoomPeakSeasonRate[]
 
   @@index([propertyId])
+}
+
+model RoomAvailability {
+  id          String   @id @default(uuid()) @db.Uuid
+  roomId      String   @db.Uuid
+  date        DateTime
+  isAvailable Boolean  @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, date])
+  @@index([roomId])
+  @@index([date])
+  @@index([isAvailable])
+}
+
+model RoomPeakSeasonRate {
+  id              String   @id @default(uuid()) @db.Uuid
+  roomId          String   @db.Uuid
+  startDate       DateTime
+  endDate         DateTime
+  adjustmentType  String   @db.VarChar(20) // "FIXED" or "PERCENTAGE"
+  adjustmentValue Int // Amount in IDR for FIXED, percentage value for PERCENTAGE
+  note            String?  @db.VarChar(200)
+  isActive        Boolean  @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+  deletedAt DateTime?
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([startDate, endDate])
+  @@index([isActive])
 }
 
 model PropertySpecialPrice {

@@ -291,3 +291,273 @@ export async function deleteRoomService(id: string) {
 
     return deletedRoom;
 }
+
+export async function getRoomAvailabilityService(roomId: string, startDate?: Date, endDate?: Date) {
+    const whereClause: any = {
+        roomId,
+        deletedAt: null,
+    };
+
+    if (startDate && endDate) {
+        whereClause.date = {
+            gte: startDate,
+            lte: endDate,
+        };
+    }
+
+    const availability = await prisma.roomAvailability.findMany({
+        where: whereClause,
+        orderBy: {
+            date: 'asc',
+        },
+    });
+
+    return availability;
+}
+
+export async function updateRoomAvailabilityService(roomId: string, date: Date, isAvailable: boolean) {
+    const room = await prisma.room.findFirst({
+        where: { id: roomId, deletedAt: null },
+    });
+
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    const availability = await prisma.roomAvailability.upsert({
+        where: {
+            roomId_date: {
+                roomId,
+                date,
+            },
+        },
+        update: {
+            isAvailable,
+            updatedAt: new Date(),
+        },
+        create: {
+            roomId,
+            date,
+            isAvailable,
+        },
+    });
+
+    return availability;
+}
+
+export async function bulkUpdateRoomAvailabilityService(
+    roomId: string, 
+    dates: { date: Date; isAvailable: boolean }[]
+) {
+    const room = await prisma.room.findFirst({
+        where: { id: roomId, deletedAt: null },
+    });
+
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    const results = await prisma.$transaction(
+        dates.map(({ date, isAvailable }) =>
+            prisma.roomAvailability.upsert({
+                where: {
+                    roomId_date: {
+                        roomId,
+                        date,
+                    },
+                },
+                update: {
+                    isAvailable,
+                    updatedAt: new Date(),
+                },
+                create: {
+                    roomId,
+                    date,
+                    isAvailable,
+                },
+            })
+        )
+    );
+
+    return results;
+}
+
+export async function getPeakSeasonRatesService(roomId: string, includeInactive: boolean = false) {
+    const whereClause: any = {
+        roomId,
+        deletedAt: null,
+    };
+
+    if (!includeInactive) {
+        whereClause.isActive = true;
+    }
+
+    const peakSeasonRates = await prisma.roomPeakSeasonRate.findMany({
+        where: whereClause,
+        orderBy: {
+            startDate: 'asc',
+        },
+    });
+
+    return peakSeasonRates;
+}
+
+export async function createPeakSeasonRateService(data: {
+    roomId: string;
+    startDate: Date;
+    endDate: Date;
+    adjustmentType: 'FIXED' | 'PERCENTAGE';
+    adjustmentValue: number;
+    note?: string;
+}) {
+    const room = await prisma.room.findFirst({
+        where: { id: data.roomId, deletedAt: null },
+    });
+
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    if (data.startDate > data.endDate) {
+        throw new Error('Start date must be before or equal to end date');
+    }
+
+    if (data.adjustmentType === 'PERCENTAGE' && (data.adjustmentValue < 0 || data.adjustmentValue > 1000)) {
+        throw new Error('Percentage adjustment must be between 0 and 1000');
+    }
+
+    if (data.adjustmentType === 'FIXED' && data.adjustmentValue < 0) {
+        throw new Error('Fixed adjustment must be a positive value');
+    }
+
+    const peakSeasonRate = await prisma.roomPeakSeasonRate.create({
+        data: {
+            roomId: data.roomId,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            adjustmentType: data.adjustmentType,
+            adjustmentValue: data.adjustmentValue,
+            note: data.note || null,
+        },
+    });
+
+    return peakSeasonRate;
+}
+
+export async function bulkCreatePeakSeasonRatesService(
+    roomId: string,
+    rates: Array<{
+        startDate: Date;
+        endDate: Date;
+        adjustmentType: 'FIXED' | 'PERCENTAGE';
+        adjustmentValue: number;
+        note?: string;
+    }>
+) {
+    const room = await prisma.room.findFirst({
+        where: { id: roomId, deletedAt: null },
+    });
+
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    for (const rate of rates) {
+        if (rate.startDate > rate.endDate) {
+            throw new Error('Start date must be before or equal to end date');
+        }
+        if (rate.adjustmentType === 'PERCENTAGE' && (rate.adjustmentValue < 0 || rate.adjustmentValue > 1000)) {
+            throw new Error('Percentage adjustment must be between 0 and 1000');
+        }
+        if (rate.adjustmentType === 'FIXED' && rate.adjustmentValue < 0) {
+            throw new Error('Fixed adjustment must be a positive value');
+        }
+    }
+
+    const results = await prisma.roomPeakSeasonRate.createMany({
+        data: rates.map(rate => ({
+            roomId,
+            startDate: rate.startDate,
+            endDate: rate.endDate,
+            adjustmentType: rate.adjustmentType,
+            adjustmentValue: rate.adjustmentValue,
+            note: rate.note || null,
+        })),
+    });
+
+    return results;
+}
+
+export async function updatePeakSeasonRateService(
+    id: string,
+    data: {
+        startDate?: Date;
+        endDate?: Date;
+        adjustmentType?: 'FIXED' | 'PERCENTAGE';
+        adjustmentValue?: number;
+        note?: string;
+        isActive?: boolean;
+    }
+) {
+    const existingRate = await prisma.roomPeakSeasonRate.findFirst({
+        where: { id, deletedAt: null },
+    });
+
+    if (!existingRate) {
+        throw new Error('Peak season rate not found');
+    }
+
+    const startDate = data.startDate || existingRate.startDate;
+    const endDate = data.endDate || existingRate.endDate;
+
+    if (startDate > endDate) {
+        throw new Error('Start date must be before or equal to end date');
+    }
+
+    if (data.adjustmentType === 'PERCENTAGE' && data.adjustmentValue !== undefined) {
+        if (data.adjustmentValue < 0 || data.adjustmentValue > 1000) {
+            throw new Error('Percentage adjustment must be between 0 and 1000');
+        }
+    }
+
+    if (data.adjustmentType === 'FIXED' && data.adjustmentValue !== undefined) {
+        if (data.adjustmentValue < 0) {
+            throw new Error('Fixed adjustment must be a positive value');
+        }
+    }
+
+    const updatedRate = await prisma.roomPeakSeasonRate.update({
+        where: { id },
+        data: {
+            ...(data.startDate && { startDate: data.startDate }),
+            ...(data.endDate && { endDate: data.endDate }),
+            ...(data.adjustmentType && { adjustmentType: data.adjustmentType }),
+            ...(data.adjustmentValue !== undefined && { adjustmentValue: data.adjustmentValue }),
+            ...(data.note !== undefined && { note: data.note }),
+            ...(data.isActive !== undefined && { isActive: data.isActive }),
+            updatedAt: new Date(),
+        },
+    });
+
+    return updatedRate;
+}
+
+export async function deletePeakSeasonRateService(id: string) {
+    const existingRate = await prisma.roomPeakSeasonRate.findFirst({
+        where: { id, deletedAt: null },
+    });
+
+    if (!existingRate) {
+        throw new Error('Peak season rate not found');
+    }
+
+    const deletedRate = await prisma.roomPeakSeasonRate.update({
+        where: { id },
+        data: {
+            deletedAt: new Date(),
+        },
+    });
+
+    return deletedRate;
+}
+
