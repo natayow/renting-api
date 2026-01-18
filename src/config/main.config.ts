@@ -10,4 +10,7 @@ export const CORS_WHITELIST_URL_2 = process.env.CORS_WHITELIST_URL_2 || "http://
 export const NEXTAUTH_INTERNAL_SECRET = process.env.NEXTAUTH_INTERNAL_SECRET || "nextauth2025";
 export const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY as string || "jcwdbsdam35";
 export const JWT_SECRET_KEY_OTHER = process.env.JWT_SECRET_KEY_OTHER as string || "jcwdbsdam35other";
+export const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+export const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || "";
+export const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY || "";
 
