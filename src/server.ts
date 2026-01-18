@@ -8,6 +8,7 @@ import { customCors } from './middlewares/cors.middleware';
 import facilityRouter from './routers/facility.router';
 import roomRouter from './routers/room.router';
 import bookingRouter from './routers/booking.router';
+import midtransRouter from './routers/midtrans.router';
 
 const app: Express = express();
 
@@ -26,6 +27,7 @@ app.use('/api/properties', propertyRouter);
 app.use('/api/facilities', facilityRouter);
 app.use('/api/rooms', roomRouter);
 app.use('/api/bookings', bookingRouter);
+app.use('/api/midtrans', midtransRouter);
 
 app.get('/', (_: Request, res: Response) => {
     res.send('<h1>Hello World!</h1>');

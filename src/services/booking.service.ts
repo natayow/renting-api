@@ -7,6 +7,7 @@ import {
     AvailableRoom,
     BookingDetailsResponse,
 } from '../types/booking.types';
+import { createMidtransPayment } from './midtrans.service';
 
 
 export async function checkRoomAvailability(
@@ -261,13 +262,11 @@ export async function createBookingService(
 
     const initialStatus =
         paymentMethod === 'PAYMENT_GATEWAY'
-            ? BookingStatus.CONFIRMED
+            ? BookingStatus.WAITING_PAYMENT
             : BookingStatus.WAITING_CONFIRMATION;
 
-    const paymentDueAt = paymentMethod === 'BANK_TRANSFER' ? new Date() : null;
-    if (paymentDueAt) {
-        paymentDueAt.setHours(paymentDueAt.getHours() + 24);
-    }
+    const paymentDueAt = new Date();
+    paymentDueAt.setHours(paymentDueAt.getHours() + 24);
 
     const booking = await prisma.$transaction(async (tx) => {
         const newBooking = await tx.booking.create({
@@ -309,18 +308,40 @@ export async function createBookingService(
                 bookingId: newBooking.id,
                 userId,
                 amountIdr: pricing.totalPriceIdr,
-                paymentStatus: paymentMethod === 'PAYMENT_GATEWAY' ? PaymentStatus.SUCCESS : PaymentStatus.PENDING,
+                paymentStatus: PaymentStatus.PENDING,
                 paymentMethod,
-                paidAt: paymentMethod === 'PAYMENT_GATEWAY' ? new Date() : null,
             },
         });
 
         return newBooking;
     });
 
+    let paymentToken = null;
+    let paymentUrl = null;
+
+    if (paymentMethod === 'PAYMENT_GATEWAY') {
+        try {
+            const midtransPayment = await createMidtransPayment({
+                bookingId: booking.id,
+                amount: pricing.totalPriceIdr,
+                customerName: user.fullName,
+                customerEmail: user.email,
+            });
+
+            paymentToken = midtransPayment.token;
+            paymentUrl = midtransPayment.redirect_url;
+        } catch (error: any) {
+            console.error('Failed to create Midtrans payment:', error);
+        }
+    }
+
     const bookingDetails = await getBookingByIdService(booking.id);
 
-    return bookingDetails;
+    return {
+        ...bookingDetails,
+        paymentToken,
+        paymentUrl,
+    };
 }
 
 export async function getBookingByIdService(

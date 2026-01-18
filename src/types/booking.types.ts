@@ -96,4 +96,6 @@ export interface BookingDetailsResponse {
         paymentMethod: string | null;
         paidAt: Date | null;
     }>;
+    paymentToken?: string | null;
+    paymentUrl?: string | null;
 }
