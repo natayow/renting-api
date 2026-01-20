@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import {  createAdminProfileService, getUserByIdService, loginUserService, registerAdminService, registerUserService } from '../services/auth.service';
+import {  createAdminProfileService, getUserByIdService, loginUserService, registerAdminService, registerUserService, updateUserProfileService, verifyEmailService } from '../services/auth.service';
 
 import bcrypt from 'bcrypt';
 
@@ -174,4 +174,78 @@ export async function createAdminProfileController(req: Request, res: Response) 
     }
 }
 
+export async function verifyEmailController(req: Request, res: Response) {
+    try {
+        const payload = res.locals?.payload;
+
+        if (!payload || !payload.userId) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid verification token',
+                data: null
+            });
+            return;
+        }
+
+        await verifyEmailService({id: payload.userId});
+
+        res.status(200).json({
+            success: true,
+            message: 'Email verification successful',
+            data: null
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error?.message || 'Failed to verify email',
+            data: null
+        });
+    }
+}
+
+export async function updateUserProfileController(req: Request, res: Response) {
+    try {
+        const payload = res.locals.payload;
+        const userId = payload?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized',
+                data: null
+            });
+        }
+
+        const { fullName, phoneNumber } = req.body;
+        let pictureUrl: string | undefined;
+
+        if (req.file) {
+            const file = req.file as Express.Multer.File;
+            pictureUrl = `/uploads/images/${file.filename}`;
+        }
+
+        const result = await updateUserProfileService(userId, {
+            fullName,
+            phoneNumber,
+            pictureUrl
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: result
+        });
+    } catch (error: any) {
+        let statusCode = 500;
+        if (error.message === 'User not found') {
+            statusCode = 404;
+        }
+        
+        res.status(statusCode).json({ 
+            success: false, 
+            message: error?.message || 'Failed to update profile', 
+            data: null 
+        });
+    }
+}
 

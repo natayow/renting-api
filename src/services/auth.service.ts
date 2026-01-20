@@ -2,6 +2,9 @@ import prisma from '../config/prisma-client';
 import { User } from '../generated/prisma';
 import bcrypt from 'bcrypt';
 import { jwtSign } from '../utils/jwt-sign';
+import { emailTransporter } from '../utils/nodemailer-transporter';
+import { sendMailService } from './mail.service';
+import { JWT_VERIFY_EMAIL, LINK_VERIFICATION } from '../config/main.config';
 
 
 export async function registerAdminService({ fullName, email, password, phoneNumber }: Pick<User, 'fullName' | 'email' | 'password' | 'phoneNumber' >) {
@@ -24,10 +27,6 @@ export async function registerAdminService({ fullName, email, password, phoneNum
 
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-   
-
-    try {
    
         const newUser = await prisma.user.create({
             data: {
@@ -48,15 +47,7 @@ export async function registerAdminService({ fullName, email, password, phoneNum
           
             role: newUser.role,
         };
-    } catch (error: any) {
-        if (error.code === 'P2002') {
-            
-            if (error.meta?.target?.includes('email')) {
-                throw new Error('User with this email already exists');
-            } 
-        }
-        throw error;
-    }
+
 }
 
 
@@ -79,14 +70,8 @@ export async function registerUserService({ fullName, email, password, phoneNumb
         if (existingUser) {
             throw new Error('User with this email already exists');
         }
-
     
         const hashedPassword = await bcrypt.hash(password, 10);
-
-       
-       
-
-        try {
        
             const newUser = await tx.user.create({
                 data: {
@@ -99,7 +84,22 @@ export async function registerUserService({ fullName, email, password, phoneNumb
                 },
             });
 
+            const token = jwtSign({ userId: newUser?.id }, JWT_VERIFY_EMAIL!, {
+                expiresIn: '1d',
+            });
+
+            const verificationLink = `${LINK_VERIFICATION}/${token}`;
             
+
+            await sendMailService({
+                to: normalizedEmail,
+                subject: 'Email Verification',
+                templateName: 'email-verification',
+                replaceable: {
+                    emailUser: normalizedEmail,
+                    linkVerification: verificationLink,
+                },
+            });
 
             return {
                 id: newUser.id,
@@ -108,16 +108,9 @@ export async function registerUserService({ fullName, email, password, phoneNumb
                 phoneNumber: newUser.phoneNumber,
                 
             };
-        } catch (error: any) {
-            if (error.code === 'P2002') {
-     
-                if (error.meta?.target?.includes('email')) {
-                    throw new Error('User with this email already exists');
-                }
-            }
-            throw error;
-        }
+
     });
+
 }
 
 export async function loginUserService({ email, password }: Pick<User, 'email' | 'password'>) {
@@ -149,7 +142,9 @@ export async function getUserByIdService(id: string) {
             fullName: true,
             email: true,
             phoneNumber: true,
+            pictureUrl: true,
             role: true,
+            isVerified: true,
             adminProfile: {
                 select: {
                     id: true,
@@ -230,3 +225,80 @@ export async function createAdminProfileService(userId: string, data: {
 }
 
 
+
+export async function verifyEmailService({id}: Pick<User, 'id'>) {
+    
+    
+    const user = await prisma.user.findUnique({
+        where: { id }
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    if (user.isVerified) {
+        console.log('User already verified');
+        return user;
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { isVerified: true },
+    });
+
+    console.log('User verified successfully:', updatedUser.email);
+    return updatedUser;
+}
+
+export async function updateUserProfileService(userId: string, data: {
+    fullName?: string;
+    phoneNumber?: string;
+    pictureUrl?: string;
+}) {
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    const updateData: any = {};
+    
+    if (data.fullName !== undefined) {
+        updateData.fullName = data.fullName.trim();
+    }
+    if (data.phoneNumber !== undefined) {
+        updateData.phoneNumber = data.phoneNumber ? data.phoneNumber.trim() : null;
+    }
+    if (data.pictureUrl !== undefined) {
+        updateData.pictureUrl = data.pictureUrl;
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phoneNumber: true,
+            pictureUrl: true,
+            role: true,
+            isVerified: true,
+            adminProfile: {
+                select: {
+                    id: true,
+                    displayName: true,
+                    description: true,
+                    bankName: true,
+                    bankAccountNo: true,
+                    bankAccountName: true,
+                }
+            }
+        }
+    });
+
+    return updatedUser;
+}

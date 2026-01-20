@@ -149,6 +149,8 @@ export async function handleMidtransNotification(notification: any) {
             });
         }
 
+        //send email if payment is successful
+
         return updatedBooking;
     } catch (error: any) {
         console.error('Error handling Midtrans notification:', error);

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Verify your email</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta
+      name="format-detection"
+      content="telephone=no,address=no,email=no,date=no,url=no"
+    />
+
+    <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        .bg-body {
+          background: #0f1115 !important;
+        }
+        .bg-card {
+          background: #171923 !important;
+        }
+        .text {
+          color: #e6e6e6 !important;
+        }
+        .muted {
+          color: #a0aec0 !important;
+        }
+        .btn {
+          background: #3b82f6 !important;
+        }
+      }
+
+      /* Mobile tweaks */
+      @media screen and (max-width: 600px) {
+        .container {
+          width: 100% !important;
+        }
+        .px {
+          padding-left: 20px !important;
+          padding-right: 20px !important;
+        }
+        .py {
+          padding-top: 24px !important;
+          padding-bottom: 24px !important;
+        }
+      }
+
+      .preheader {
+        display: none;
+        font-size: 1px;
+        color: #fff;
+        line-height: 1px;
+        max-height: 0;
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body class="bg-body" style="margin: 0; padding: 0; background: #f3f4f6">
+    <!-- Preheader (preview) text -->
+    <div class="preheader">
+      Verify your email to finish setting up your account.
+    </div>
+
+    <table
+      role="presentation"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      width="100%"
+      style="background: #f3f4f6"
+    >
+      <tr>
+        <td align="center" style="padding: 24px">
+          <table
+            role="presentation"
+            class="container"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            width="600"
+            style="
+              width: 600px;
+              max-width: 600px;
+              background: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+            "
+          >
+            <!-- Header -->
+            <tr>
+              <td class="px py" style="padding: 24px 32px; background: #0ea5e9">
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 20px;
+                    line-height: 24px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #ffffff;
+                  "
+                >
+                  Verify your email
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td
+                class="px py bg-card"
+                style="padding: 28px 32px; background: #ffffff"
+              >
+                <p
+                  class="text"
+                  style="
+                    margin: 0 0 12px;
+                    font-size: 16px;
+                    line-height: 24px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #111827;
+                  "
+                >
+                  Hi {{emailUser}},
+                </p>
+                <p
+                  class="text"
+                  style="
+                    margin: 0 0 16px;
+                    font-size: 16px;
+                    line-height: 24px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #111827;
+                  "
+                >
+                  Thanks for signing up! Please confirm this email address to
+                  finish setting up your account.
+                </p>
+
+                <table
+                  role="presentation"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="margin: 24px 0"
+                >
+                  <tr>
+                    <td align="left">
+                      <a
+                        href="{{linkVerification}}"
+                        style="
+                          display: inline-block;
+                          background: #2563eb;
+                          color: #ffffff;
+                          text-decoration: none;
+                          font-weight: 700;
+                          font-size: 16px;
+                          line-height: 44px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          border-radius: 6px;
+                          padding: 0 20px;
+                          min-width: 200px;
+                          text-align: center;
+                        "
+                        target="_blank"
+                        class="btn"
+                        >Verify email</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  class="muted"
+                  style="
+                    margin: 16px 0 0;
+                    font-size: 12px;
+                    line-height: 18px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #6b7280;
+                  "
+                >
+                  This link will expire in 24 hours. If you didn't request this,
+                  you can safely ignore this email.
+                </p>
+
+                <p
+                  class="muted"
+                  style="
+                    margin: 16px 0 0;
+                    font-size: 11px;
+                    line-height: 16px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #6b7280;
+                    word-break: break-all;
+                    overflow-wrap: break-word;
+                  "
+                >
+                  Button not working? Copy and paste this URL into your
+                  browser:<br /><br />
+                  <span
+                    style="
+                      background: #f3f4f6;
+                      padding: 12px 16px;
+                      border-radius: 6px;
+                      display: block;
+                      margin-top: 8px;
+                      font-family: 'Courier New', Courier, monospace;
+                      font-size: 10px;
+                      color: #1f2937;
+                      word-break: break-all;
+                      overflow-wrap: break-word;
+                      white-space: normal;
+                      border: 1px solid #e5e7eb;
+                    "
+                    >{{linkVerification}}</span
+                  >
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td class="px py" style="padding: 20px 32px; background: #f9fafb">
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 12px;
+                    line-height: 18px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #6b7280;
+                  "
+                >
+                  Need help? Contact us at support@rentingapp.com
+                </p>
+                <p
+                  style="
+                    margin: 8px 0 0;
+                    font-size: 11px;
+                    line-height: 16px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #9ca3af;
+                  "
+                >
+                  © 2026 Renting App. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
