@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import {  createAdminProfileService, getUserByIdService, loginUserService, registerAdminService, registerUserService, updateUserProfileService, verifyEmailService } from '../services/auth.service';
+import {  createAdminProfileService, getUserByIdService, loginUserService, registerAdminService, registerUserService, updateUserEmailService, updateUserProfileService, verifyEmailService } from '../services/auth.service';
 
 import bcrypt from 'bcrypt';
 
@@ -244,6 +244,54 @@ export async function updateUserProfileController(req: Request, res: Response) {
         res.status(statusCode).json({ 
             success: false, 
             message: error?.message || 'Failed to update profile', 
+            data: null 
+        });
+    }
+}
+
+export async function updateUserEmailController(req: Request, res: Response) {
+    try {
+        const payload = res.locals.payload;
+        const userId = payload?.userId;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized',
+                data: null
+            });
+        }
+
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required',
+                data: null
+            });
+        }
+
+        const result = await updateUserEmailService(userId, email);
+
+        res.status(200).json({
+            success: true,
+            message: 'Email updated successfully. Please check your new email for verification link.',
+            data: result
+        });
+    } catch (error: any) {
+        let statusCode = 500;
+        if (error.message === 'User not found') {
+            statusCode = 404;
+        } else if (error.message === 'Email is already in use by another account') {
+            statusCode = 400;
+        } else if (error.message === 'New email is the same as current email') {
+            statusCode = 400;
+        }
+        
+        res.status(statusCode).json({ 
+            success: false, 
+            message: error?.message || 'Failed to update email', 
             data: null 
         });
     }

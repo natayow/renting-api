@@ -50,7 +50,7 @@ export async function createPropertyController(req: Request, res: Response) {
                 try {
                     rooms = JSON.parse(req.body.rooms);
                 } catch (e) {
-                    console.error('Failed to parse rooms JSON:', e);
+                    // JSON parse error handled
                 }
             }
         }

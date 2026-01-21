@@ -26,19 +26,41 @@ export async function sendMailService({
 
   const templateHtml = templateCompiled(replaceable);
 
-  console.log('📧 Sending email:');
-  console.log('  To:', to);
-  console.log('  Subject:', subject);
-  console.log('  Template:', templateName);
-  if (replaceable.linkVerification) {
-    console.log('  🔗 Verification Link in Email:', replaceable.linkVerification);
-  }
-
   await emailTransporter.sendMail({
     subject,
     to,
     html: templateHtml,
   });
+}
 
-  console.log('  ✅ Email sent successfully!');
+export async function sendInvoiceEmail({
+  to,
+  bookingDetails,
+}: {
+  to: string;
+  bookingDetails: {
+    bookingId: string;
+    customerName: string;
+    propertyName: string;
+    propertyLocation: string;
+    roomName?: string;
+    checkInDate: string;
+    checkOutDate: string;
+    nights: number;
+    guestsCount: number;
+    nightlySubtotal: string;
+    cleaningFee: string;
+    serviceFee: string;
+    discount: string;
+    totalPrice: string;
+    paymentMethod: string;
+    paidAt: string;
+  };
+}) {
+  await sendMailService({
+    to,
+    subject: 'Booking Confirmation & Invoice',
+    templateName: 'invoice',
+    replaceable: bookingDetails,
+  });
 }

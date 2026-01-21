@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Booking Invoice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta
+      name="format-detection"
+      content="telephone=no,address=no,email=no,date=no,url=no"
+    />
+
+    <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        .bg-body {
+          background: #0f1115 !important;
+        }
+        .bg-card {
+          background: #171923 !important;
+        }
+        .text {
+          color: #e6e6e6 !important;
+        }
+        .muted {
+          color: #a0aec0 !important;
+        }
+        .bg-success {
+          background: #059669 !important;
+        }
+      }
+
+      /* Mobile tweaks */
+      @media screen and (max-width: 600px) {
+        .container {
+          width: 100% !important;
+        }
+        .px {
+          padding-left: 20px !important;
+          padding-right: 20px !important;
+        }
+        .py {
+          padding-top: 24px !important;
+          padding-bottom: 24px !important;
+        }
+      }
+
+      .preheader {
+        display: none;
+        font-size: 1px;
+        color: #fff;
+        line-height: 1px;
+        max-height: 0;
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body class="bg-body" style="margin: 0; padding: 0; background: #f3f4f6">
+    <!-- Preheader (preview) text -->
+    <div class="preheader">
+      Your booking has been confirmed! Here's your invoice.
+    </div>
+
+    <table
+      role="presentation"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      width="100%"
+      style="background: #f3f4f6"
+    >
+      <tr>
+        <td align="center" style="padding: 24px">
+          <table
+            role="presentation"
+            class="container"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            width="600"
+            style="
+              width: 600px;
+              max-width: 600px;
+              background: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+            "
+          >
+            <!-- Header -->
+            <tr>
+              <td class="px py" style="padding: 24px 32px; background: #10b981">
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 24px;
+                    line-height: 28px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #ffffff;
+                    font-weight: 700;
+                  "
+                >
+                  ✓ Booking Confirmed
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Success Message -->
+            <tr>
+              <td
+                class="px py bg-card"
+                style="padding: 28px 32px; background: #ffffff"
+              >
+                <p
+                  class="text"
+                  style="
+                    margin: 0 0 12px;
+                    font-size: 16px;
+                    line-height: 24px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #111827;
+                  "
+                >
+                  Hi {{customerName}},
+                </p>
+                <p
+                  class="text"
+                  style="
+                    margin: 0 0 16px;
+                    font-size: 16px;
+                    line-height: 24px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #111827;
+                  "
+                >
+                  Thank you for your booking! Your payment has been successfully
+                  processed. Here are the details of your reservation:
+                </p>
+
+                <!-- Booking Details Card -->
+                <div
+                  style="
+                    background: #f9fafb;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin: 24px 0;
+                  "
+                >
+                  <h2
+                    class="text"
+                    style="
+                      margin: 0 0 16px;
+                      font-size: 18px;
+                      line-height: 24px;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                        Roboto, Arial, sans-serif;
+                      color: #111827;
+                      font-weight: 600;
+                    "
+                  >
+                    {{propertyName}}
+                  </h2>
+
+                  <table
+                    role="presentation"
+                    cellpadding="0"
+                    cellspacing="0"
+                    border="0"
+                    width="100%"
+                    style="margin: 0"
+                  >
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Location:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 500;
+                        "
+                      >
+                        {{propertyLocation}}
+                      </td>
+                    </tr>
+                    {{#if roomName}}
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Room:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 500;
+                        "
+                      >
+                        {{roomName}}
+                      </td>
+                    </tr>
+                    {{/if}}
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Check-in:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 500;
+                        "
+                      >
+                        {{checkInDate}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Check-out:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 500;
+                        "
+                      >
+                        {{checkOutDate}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Nights:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 500;
+                        "
+                      >
+                        {{nights}} night(s)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Guests:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 500;
+                        "
+                      >
+                        {{guestsCount}} guest(s)
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <!-- Price Breakdown -->
+                <div
+                  style="
+                    background: #f9fafb;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin: 24px 0;
+                  "
+                >
+                  <h3
+                    class="text"
+                    style="
+                      margin: 0 0 16px;
+                      font-size: 16px;
+                      line-height: 20px;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                        Roboto, Arial, sans-serif;
+                      color: #111827;
+                      font-weight: 600;
+                    "
+                  >
+                    Price Breakdown
+                  </h3>
+
+                  <table
+                    role="presentation"
+                    cellpadding="0"
+                    cellspacing="0"
+                    border="0"
+                    width="100%"
+                    style="margin: 0"
+                  >
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Nightly Subtotal:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                        "
+                      >
+                        Rp {{nightlySubtotal}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Cleaning Fee:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                        "
+                      >
+                        Rp {{cleaningFee}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #6b7280;
+                        "
+                      >
+                        Service Fee:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                        "
+                      >
+                        Rp {{serviceFee}}
+                      </td>
+                    </tr>
+                    {{#if discount}}
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #059669;
+                        "
+                      >
+                        Discount:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #059669;
+                        "
+                      >
+                        - Rp {{discount}}
+                      </td>
+                    </tr>
+                    {{/if}}
+                    <tr>
+                      <td colspan="2" style="padding: 8px 0">
+                        <div style="border-top: 2px solid #e5e7eb"></div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 8px 0;
+                          font-size: 16px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 700;
+                        "
+                      >
+                        Total:
+                      </td>
+                      <td
+                        class="text"
+                        align="right"
+                        style="
+                          padding: 8px 0;
+                          font-size: 16px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #111827;
+                          font-weight: 700;
+                        "
+                      >
+                        Rp {{totalPrice}}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <!-- Payment Information -->
+                <div
+                  style="
+                    background: #ecfdf5;
+                    border: 1px solid #10b981;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin: 24px 0;
+                  "
+                >
+                  <table
+                    role="presentation"
+                    cellpadding="0"
+                    cellspacing="0"
+                    border="0"
+                    width="100%"
+                  >
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 4px 0;
+                          font-size: 14px;
+                          line-height: 20px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #059669;
+                          font-weight: 600;
+                        "
+                      >
+                        Payment Confirmed
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 4px 0;
+                          font-size: 13px;
+                          line-height: 18px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #047857;
+                        "
+                      >
+                        Payment Method: {{paymentMethod}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 4px 0;
+                          font-size: 13px;
+                          line-height: 18px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #047857;
+                        "
+                      >
+                        Booking ID: {{bookingId}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="text"
+                        style="
+                          padding: 4px 0;
+                          font-size: 13px;
+                          line-height: 18px;
+                          font-family: -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, Arial, sans-serif;
+                          color: #047857;
+                        "
+                      >
+                        Paid on: {{paidAt}}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <p
+                  class="text"
+                  style="
+                    margin: 24px 0 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #111827;
+                  "
+                >
+                  We look forward to hosting you! If you have any questions
+                  about your booking, please don't hesitate to contact us.
+                </p>
+
+                <p
+                  class="muted"
+                  style="
+                    margin: 16px 0 0;
+                    font-size: 12px;
+                    line-height: 18px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #6b7280;
+                  "
+                >
+                  This is an automated confirmation email. Please keep this for
+                  your records.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                class="px py"
+                style="
+                  padding: 20px 32px;
+                  background: #f9fafb;
+                  border-top: 1px solid #e5e7eb;
+                "
+              >
+                <p
+                  class="muted"
+                  style="
+                    margin: 0;
+                    font-size: 12px;
+                    line-height: 18px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      Roboto, Arial, sans-serif;
+                    color: #6b7280;
+                    text-align: center;
+                  "
+                >
+                  © 2026 Renting Platform. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { createAdminProfileController, getUserByIdController, loginController, registerAdminController, registerController, updateUserProfileController, verifyEmailController } from '../controllers/auth.controller';
+import { createAdminProfileController, getUserByIdController, loginController, registerAdminController, registerController, updateUserEmailController, updateUserProfileController, verifyEmailController } from '../controllers/auth.controller';
 import { jwtVerify } from '../middlewares/jwt-auth.middleware';
 import { JWT_VERIFY_EMAIL } from '../config/main.config';
 import { uploaderMulter } from '../utils/multer-uploads';
 import { updateUserProfileValidator } from '../validators/update-profile.validator';
+import { updateUserEmailValidator } from '../validators/update-email.validator';
 import { handleValidationErrors } from '../middlewares/validator-request';
 
 const router = Router();
@@ -21,6 +22,13 @@ router.put(
   updateUserProfileValidator,
   handleValidationErrors,
   updateUserProfileController
+);
+router.put(
+  '/user/email', 
+  jwtVerify(process.env.JWT_SECRET_KEY!),
+  updateUserEmailValidator,
+  handleValidationErrors,
+  updateUserEmailController
 );
 
 

@@ -238,7 +238,6 @@ export async function verifyEmailService({id}: Pick<User, 'id'>) {
     }
 
     if (user.isVerified) {
-        console.log('User already verified');
         return user;
     }
 
@@ -247,7 +246,6 @@ export async function verifyEmailService({id}: Pick<User, 'id'>) {
         data: { isVerified: true },
     });
 
-    console.log('User verified successfully:', updatedUser.email);
     return updatedUser;
 }
 
@@ -301,4 +299,71 @@ export async function updateUserProfileService(userId: string, data: {
     });
 
     return updatedUser;
+}
+
+export async function updateUserEmailService(userId: string, newEmail: string) {
+    return await prisma.$transaction(async (tx) => {
+        const normalizedEmail = newEmail.toLowerCase().trim();
+
+        // Check if user exists
+        const user = await tx.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Check if new email is same as current
+        if (user.email === normalizedEmail) {
+            throw new Error('New email is the same as current email');
+        }
+
+        // Check if email is already taken by another user
+        const existingUser = await tx.user.findUnique({
+            where: { email: normalizedEmail }
+        });
+
+        if (existingUser) {
+            throw new Error('Email is already in use by another account');
+        }
+
+        // Update email and set isVerified to false
+        const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: {
+                email: normalizedEmail,
+                isVerified: false
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phoneNumber: true,
+                pictureUrl: true,
+                role: true,
+                isVerified: true
+            }
+        });
+
+        // Generate verification token
+        const token = jwtSign({ userId: updatedUser.id }, JWT_VERIFY_EMAIL!, {
+            expiresIn: '1d',
+        });
+
+        const verificationLink = `${LINK_VERIFICATION}/${token}`;
+
+        // Send verification email to new email address
+        await sendMailService({
+            to: normalizedEmail,
+            subject: 'Email Verification - New Email Address',
+            templateName: 'email-verification',
+            replaceable: {
+                emailUser: normalizedEmail,
+                linkVerification: verificationLink,
+            },
+        });
+
+        return updatedUser;
+    });
 }

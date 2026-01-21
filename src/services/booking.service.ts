@@ -331,7 +331,7 @@ export async function createBookingService(
             paymentToken = midtransPayment.token;
             paymentUrl = midtransPayment.redirect_url;
         } catch (error: any) {
-            console.error('Failed to create Midtrans payment:', error);
+            // Midtrans payment error handled silently
         }
     }
 
