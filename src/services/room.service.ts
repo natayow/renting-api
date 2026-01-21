@@ -92,7 +92,6 @@ export async function createRoomService({
 
         return newRoom;
     } catch (error: any) {
-        console.error('Error creating room:', error);
         throw error;
     }
 }
@@ -252,7 +251,6 @@ export async function updateRoomService(id: string, updateData: UpdateRoomInput)
 
         return updatedRoom;
     } catch (error: any) {
-        console.error('Error updating room:', error);
         throw error;
     }
 }

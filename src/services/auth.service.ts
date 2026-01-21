@@ -2,6 +2,9 @@ import prisma from '../config/prisma-client';
 import { User } from '../generated/prisma';
 import bcrypt from 'bcrypt';
 import { jwtSign } from '../utils/jwt-sign';
+import { emailTransporter } from '../utils/nodemailer-transporter';
+import { sendMailService } from './mail.service';
+import { JWT_VERIFY_EMAIL, LINK_VERIFICATION } from '../config/main.config';
 
 
 export async function registerAdminService({ fullName, email, password, phoneNumber }: Pick<User, 'fullName' | 'email' | 'password' | 'phoneNumber' >) {
@@ -24,10 +27,6 @@ export async function registerAdminService({ fullName, email, password, phoneNum
 
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-   
-
-    try {
    
         const newUser = await prisma.user.create({
             data: {
@@ -48,15 +47,7 @@ export async function registerAdminService({ fullName, email, password, phoneNum
           
             role: newUser.role,
         };
-    } catch (error: any) {
-        if (error.code === 'P2002') {
-            
-            if (error.meta?.target?.includes('email')) {
-                throw new Error('User with this email already exists');
-            } 
-        }
-        throw error;
-    }
+
 }
 
 
@@ -79,14 +70,8 @@ export async function registerUserService({ fullName, email, password, phoneNumb
         if (existingUser) {
             throw new Error('User with this email already exists');
         }
-
     
         const hashedPassword = await bcrypt.hash(password, 10);
-
-       
-       
-
-        try {
        
             const newUser = await tx.user.create({
                 data: {
@@ -99,7 +84,22 @@ export async function registerUserService({ fullName, email, password, phoneNumb
                 },
             });
 
+            const token = jwtSign({ userId: newUser?.id }, JWT_VERIFY_EMAIL!, {
+                expiresIn: '1d',
+            });
+
+            const verificationLink = `${LINK_VERIFICATION}/${token}`;
             
+
+            await sendMailService({
+                to: normalizedEmail,
+                subject: 'Email Verification',
+                templateName: 'email-verification',
+                replaceable: {
+                    emailUser: normalizedEmail,
+                    linkVerification: verificationLink,
+                },
+            });
 
             return {
                 id: newUser.id,
@@ -108,16 +108,9 @@ export async function registerUserService({ fullName, email, password, phoneNumb
                 phoneNumber: newUser.phoneNumber,
                 
             };
-        } catch (error: any) {
-            if (error.code === 'P2002') {
-     
-                if (error.meta?.target?.includes('email')) {
-                    throw new Error('User with this email already exists');
-                }
-            }
-            throw error;
-        }
+
     });
+
 }
 
 export async function loginUserService({ email, password }: Pick<User, 'email' | 'password'>) {
@@ -149,7 +142,9 @@ export async function getUserByIdService(id: string) {
             fullName: true,
             email: true,
             phoneNumber: true,
+            pictureUrl: true,
             role: true,
+            isVerified: true,
             adminProfile: {
                 select: {
                     id: true,
@@ -230,3 +225,145 @@ export async function createAdminProfileService(userId: string, data: {
 }
 
 
+
+export async function verifyEmailService({id}: Pick<User, 'id'>) {
+    
+    
+    const user = await prisma.user.findUnique({
+        where: { id }
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    if (user.isVerified) {
+        return user;
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { isVerified: true },
+    });
+
+    return updatedUser;
+}
+
+export async function updateUserProfileService(userId: string, data: {
+    fullName?: string;
+    phoneNumber?: string;
+    pictureUrl?: string;
+}) {
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    const updateData: any = {};
+    
+    if (data.fullName !== undefined) {
+        updateData.fullName = data.fullName.trim();
+    }
+    if (data.phoneNumber !== undefined) {
+        updateData.phoneNumber = data.phoneNumber ? data.phoneNumber.trim() : null;
+    }
+    if (data.pictureUrl !== undefined) {
+        updateData.pictureUrl = data.pictureUrl;
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phoneNumber: true,
+            pictureUrl: true,
+            role: true,
+            isVerified: true,
+            adminProfile: {
+                select: {
+                    id: true,
+                    displayName: true,
+                    description: true,
+                    bankName: true,
+                    bankAccountNo: true,
+                    bankAccountName: true,
+                }
+            }
+        }
+    });
+
+    return updatedUser;
+}
+
+export async function updateUserEmailService(userId: string, newEmail: string) {
+    return await prisma.$transaction(async (tx) => {
+        const normalizedEmail = newEmail.toLowerCase().trim();
+
+        // Check if user exists
+        const user = await tx.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Check if new email is same as current
+        if (user.email === normalizedEmail) {
+            throw new Error('New email is the same as current email');
+        }
+
+        // Check if email is already taken by another user
+        const existingUser = await tx.user.findUnique({
+            where: { email: normalizedEmail }
+        });
+
+        if (existingUser) {
+            throw new Error('Email is already in use by another account');
+        }
+
+        // Update email and set isVerified to false
+        const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: {
+                email: normalizedEmail,
+                isVerified: false
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phoneNumber: true,
+                pictureUrl: true,
+                role: true,
+                isVerified: true
+            }
+        });
+
+        // Generate verification token
+        const token = jwtSign({ userId: updatedUser.id }, JWT_VERIFY_EMAIL!, {
+            expiresIn: '1d',
+        });
+
+        const verificationLink = `${LINK_VERIFICATION}/${token}`;
+
+        // Send verification email to new email address
+        await sendMailService({
+            to: normalizedEmail,
+            subject: 'Email Verification - New Email Address',
+            templateName: 'email-verification',
+            replaceable: {
+                emailUser: normalizedEmail,
+                linkVerification: verificationLink,
+            },
+        });
+
+        return updatedUser;
+    });
+}

@@ -156,8 +156,6 @@ export async function createPropertyService({
             return completeProperty;
         });
     } catch (error: any) {
-        console.error('Error creating property:', error);
-        
         if (error.code === 'P2003') {
             throw new Error('Invalid reference: Admin user, location, or property type not found');
         }

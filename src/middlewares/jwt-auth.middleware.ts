@@ -32,7 +32,6 @@ export const jwtVerify = (jwtSecretKey: string) => {
 
       next();
     } catch (error: any) {
-      console.error('JWT verification error:', error.message);
       res.status(401).json({
         success: false,
         message: error.name === 'TokenExpiredError' 

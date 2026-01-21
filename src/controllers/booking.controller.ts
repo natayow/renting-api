@@ -77,8 +77,6 @@ export async function createBookingController(req: Request, res: Response) {
             data: booking,
         });
     } catch (error: any) {
-        console.error('Error creating booking:', error);
-
         let statusCode = 500;
         if (
             error.message.includes('not found') ||
@@ -119,8 +117,6 @@ export async function getBookingByIdController(req: Request, res: Response) {
             data: booking,
         });
     } catch (error: any) {
-        console.error('Error getting booking:', error);
-
         const statusCode = error.message.includes('not found') ? 404 : 500;
 
         res.status(statusCode).json({
@@ -153,8 +149,6 @@ export async function getUserBookingsController(req: Request, res: Response) {
             data: bookings,
         });
     } catch (error: any) {
-        console.error('Error getting user bookings:', error);
-
         res.status(500).json({
             success: false,
             message: error?.message || 'Failed to retrieve bookings',
@@ -189,8 +183,6 @@ export async function getAvailableRoomsController(req: Request, res: Response) {
             data: availableRooms,
         });
     } catch (error: any) {
-        console.error('Error getting available rooms:', error);
-
         const statusCode = error.message.includes('date') ? 400 : 500;
 
         res.status(statusCode).json({
@@ -226,8 +218,6 @@ export async function calculateBookingPriceController(req: Request, res: Respons
             data: pricing,
         });
     } catch (error: any) {
-        console.error('Error calculating price:', error);
-
         const statusCode = error.message.includes('not found') ? 404 : 400;
 
         res.status(statusCode).json({
@@ -262,8 +252,6 @@ export async function paymentGatewayWebhookController(req: Request, res: Respons
             data: booking,
         });
     } catch (error: any) {
-        console.error('Error processing webhook:', error);
-
         res.status(500).json({
             success: false,
             message: error?.message || 'Failed to process webhook',
@@ -295,8 +283,6 @@ export async function cancelBookingController(req: Request, res: Response) {
             data: booking,
         });
     } catch (error: any) {
-        console.error('Error canceling booking:', error);
-
         let statusCode = 500;
         if (error.message.includes('not found')) {
             statusCode = 404;
